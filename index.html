@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เฮเดย์ฟาร์ม (Hay Day Farm Pastel)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Kanit & Mali for cute smooth rounded Thai typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Mali:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tone.js for gentle background melody when vinyl spins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #ebf7ff 0%, #f5fbe8 45%, #fffdf7 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Full-screen across all devices (Mobile, iPad, Desktop) in Hay Day Pastel palette */
+        .app-wrapper {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #eaf6ff 0%, #f4fae9 38%, #fffdf7 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        /* Minimalist Pastel Hay Day Primary Button (Warm Strawberry-Barn Red Pastel) */
+        .btn-pink-3d {
+            background: linear-gradient(180deg, #f6838d 0%, #e55b69 100%);
+            border: 1px solid #f9b4bb;
+            box-shadow: 0 4px 12px rgba(229, 91, 105, 0.22);
+            color: #ffffff;
+            border-radius: 9999px;
+            transition: all 0.16s ease;
+        }
+        .btn-pink-3d:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 6px rgba(229, 91, 105, 0.25);
+        }
+
+        /* Minimalist Pastel Card & Squish-Bounce Animation */
+        .card-pastel {
+            background: #ffffff;
+            border: 1px solid #e4edd8;
+            box-shadow: 0 4px 14px rgba(108, 134, 82, 0.07);
+            border-radius: 20px;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .card-pastel:hover {
+            border-color: #b8d896;
+        }
+
+        @keyframes cardSquishBounce {
+            0% { transform: scale(1); }
+            35% { transform: scale(0.88, 0.86) translateY(3px); }
+            70% { transform: scale(1.04, 1.05) translateY(-2px); }
+            88% { transform: scale(0.98, 0.98); }
+            100% { transform: scale(1); }
+        }
+        .card-squish-anim {
+            animation: cardSquishBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Vinyl Record Spin & Floating Music Notes */
+        @keyframes spinVinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .vinyl-spinning {
+            animation: spinVinyl 6s linear infinite;
+        }
+        .vinyl-paused {
+            animation: spinVinyl 6s linear infinite;
+            animation-play-state: paused;
+        }
+
+        @keyframes floatMusicNote1 {
+            0% { transform: translate(0, 0) scale(0.6) rotate(-10deg); opacity: 0; }
+            25% { opacity: 0.95; }
+            100% { transform: translate(-22px, -34px) scale(1.15) rotate(-25deg); opacity: 0; }
+        }
+        @keyframes floatMusicNote2 {
+            0% { transform: translate(0, 0) scale(0.6) rotate(8deg); opacity: 0; }
+            25% { opacity: 0.95; }
+            100% { transform: translate(18px, -38px) scale(1.1) rotate(22deg); opacity: 0; }
+        }
+        @keyframes floatMusicNote3 {
+            0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+            30% { opacity: 0.9; }
+            100% { transform: translate(-4px, -42px) scale(1.05) rotate(14deg); opacity: 0; }
+        }
+        .music-note-1 { animation: floatMusicNote1 2.4s ease-out infinite; }
+        .music-note-2 { animation: floatMusicNote2 2.8s ease-out infinite 0.7s; }
+        .music-note-3 { animation: floatMusicNote3 2.5s ease-out infinite 1.4s; }
+
+        /* Floating Cart PNG Bobbing & Pop Effect */
+        @keyframes cartGentleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .floating-cart-btn {
+            animation: cartGentleFloat 3.2s ease-in-out infinite;
+        }
+        @keyframes bubblePopIn {
+            0% { opacity: 0; transform: scale(0.88) translateX(10px); }
+            65% { opacity: 1; transform: scale(1.02) translateX(0); }
+            100% { opacity: 1; transform: scale(1) translateX(0); }
+        }
+        .cart-bubble-pop {
+            animation: bubblePopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Minimalist Category Tab Buttons (Pastel Grass Green Active) */
+        .tab-active {
+            background: linear-gradient(180deg, #86cf58 0%, #68b43c 100%);
+            border: 1px solid #a7e082;
+            box-shadow: 0 3px 10px rgba(104, 180, 60, 0.22);
+            color: white;
+            border-radius: 16px;
+        }
+        .tab-inactive {
+            background: #ffffff;
+            border: 1px solid #e2ecd5;
+            box-shadow: 0 2px 6px rgba(108, 134, 82, 0.05);
+            color: #556b2f;
+            border-radius: 16px;
+        }
+        .tab-inactive:active, .tab-active:active {
+            transform: scale(0.97);
+        }
+
+        /* Minimalist Navigation Header Bar */
+        .nav-pill {
+            background: #ffffff;
+            border: 1px solid #e2ecd5;
+            box-shadow: 0 3px 10px rgba(108, 134, 82, 0.06);
+            border-radius: 9999px;
+        }
+
+        /* Minimalist Minus & Plus Round Buttons */
+        .btn-circle-minus {
+            background: #f5727e;
+            border: 1px solid #f9a5ad;
+            box-shadow: 0 2px 6px rgba(245, 114, 126, 0.22);
+            color: white;
+        }
+        .btn-circle-minus:active { transform: scale(0.94); }
+
+        .btn-circle-plus {
+            background: #6dc245;
+            border: 1px solid #9ce07b;
+            box-shadow: 0 2px 6px rgba(109, 194, 69, 0.22);
+            color: white;
+        }
+        .btn-circle-plus:active { transform: scale(0.94); }
+
+        /* Title text stroke effect like Hay Day UI */
+        .title-stroke {
+            font-family: 'Mali', cursive;
+            color: #8c4a1c;
+            text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0px 2px 4px rgba(140, 74, 28, 0.18);
+        }
+
+        /* Animations */
+        @keyframes windmillSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .windmill-blades {
+            transform-origin: 78px 62px;
+            animation: windmillSpin 18s linear infinite;
+        }
+
+        @keyframes sheepBob {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-3px) rotate(1deg); }
+        }
+        .sheep-mascot {
+            animation: sheepBob 3.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root" class="w-full flex justify-center"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==========================================
+        // 1. CUSTOM SVG & 1:1 IMAGE ITEM ILLUSTRATIONS
+        // ==========================================
+        const ItemIllustration = ({ type, imageUrl = '', size = "w-16 h-16" }) => {
+            if (imageUrl && imageUrl.trim() !== '') {
+                return (
+                    <img
+                        src={imageUrl.trim()}
+                        alt={type}
+                        className={`${size} object-contain rounded-xl`}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                );
+            }
+            switch (type) {
+                case 'plank':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <defs>
+                                <linearGradient id="woodTop" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stopColor="#f8cf8c"/>
+                                    <stop offset="100%" stopColor="#e2a659"/>
+                                </linearGradient>
+                                <linearGradient id="woodSide" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#c47f35"/>
+                                    <stop offset="100%" stopColor="#9c5e1f"/>
+                                </linearGradient>
+                            </defs>
+                            <polygon points="18,52 78,24 94,35 34,65" fill="url(#woodTop)" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="18,52 34,65 34,74 18,61" fill="#b36d28" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="34,65 94,35 94,44 34,74" fill="url(#woodSide)" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="8,42 66,12 84,23 26,54" fill="url(#woodTop)" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="8,42 26,54 26,64 8,51" fill="#b36d28" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="26,54 84,23 84,33 26,64" fill="url(#woodSide)" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <path d="M25,40 Q45,28 68,18 M35,45 Q55,34 74,24" stroke="#b8762e" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                        </svg>
+                    );
+                case 'tape':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <defs>
+                                <linearGradient id="tapePink" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#ff9ebb"/>
+                                    <stop offset="100%" stopColor="#f36895"/>
+                                </linearGradient>
+                                <linearGradient id="tapeTop" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stopColor="#ffd1e1"/>
+                                    <stop offset="100%" stopColor="#ffb5ce"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M52,65 L86,58 L92,38 L62,45 Z" fill="#ffc4d7" stroke="#d84b7a" strokeWidth="2" strokeLinejoin="round"/>
+                            <path d="M16,36 C16,50 16,54 16,56 C16,67 30,74 46,74 C62,74 76,67 76,56 L76,36 Z" fill="url(#tapePink)" stroke="#d84b7a" strokeWidth="2" strokeLinejoin="round"/>
+                            <ellipse cx="46" cy="36" rx="30" ry="15" fill="url(#tapeTop)" stroke="#d84b7a" strokeWidth="2"/>
+                            <ellipse cx="46" cy="36" rx="15" ry="7.5" fill="#e6b88a" stroke="#b58353" strokeWidth="2"/>
+                            <path d="M28,56 C26,53 22,55 25,59 C25,59 28,62 28,62 C28,62 31,59 31,59 C34,55 30,53 28,56 Z" fill="#ffd9e6"/>
+                            <path d="M48,60 C46,57 42,59 45,63 C45,63 48,66 48,66 C48,66 51,63 51,63 C54,59 50,57 48,60 Z" fill="#ffd9e6"/>
+                            <path d="M65,54 C63,51 59,53 62,57 C62,57 65,60 65,60 C65,60 68,57 68,57 C71,53 67,51 65,54 Z" fill="#ffd9e6"/>
+                        </svg>
+                    );
+                case 'bolt':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <defs>
+                                <linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stopColor="#f0f4f8"/>
+                                    <stop offset="50%" stopColor="#cbd5e1"/>
+                                    <stop offset="100%" stopColor="#94a3b8"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M58,28 L16,52 C12,55 17,67 24,64 L66,40 Z" fill="url(#metalGrad)" stroke="#64748b" strokeWidth="2"/>
+                            <path d="M24,47 C22,53 26,60 31,60 M32,43 C30,49 34,56 39,56 M40,38 C38,44 42,51 47,51 M48,34 C46,40 50,47 55,47" stroke="#64748b" strokeWidth="2" fill="none"/>
+                            <polygon points="56,14 74,12 84,26 76,42 58,44 48,30" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="56,14 68,20 76,34 68,43 58,44 48,30" fill="#cbd5e1" stroke="#64748b" strokeWidth="1.5" strokeLinejoin="round"/>
+                            <polygon points="62,50 82,46 92,56 84,70 64,74 54,64" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                            <ellipse cx="73" cy="59" rx="8" ry="5" fill="#64748b"/>
+                        </svg>
+                    );
+                case 'nail':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <g transform="rotate(-18 35 45)">
+                                <path d="M28,20 L33,20 L31,66 L29,74 L27,66 Z" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                                <ellipse cx="30" cy="19" rx="9" ry="4" fill="#e2e8f0" stroke="#64748b" strokeWidth="2"/>
+                            </g>
+                            <g transform="rotate(15 52 42)">
+                                <path d="M47,14 L53,14 L51,64 L49,73 L47,64 Z" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                                <ellipse cx="50" cy="13" rx="10" ry="4.5" fill="#f1f5f9" stroke="#64748b" strokeWidth="2"/>
+                            </g>
+                            <g transform="rotate(42 66 52)">
+                                <path d="M62,22 L68,22 L66,68 L64,76 L62,68 Z" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                                <ellipse cx="65" cy="21" rx="9" ry="4" fill="#e2e8f0" stroke="#64748b" strokeWidth="2"/>
+                            </g>
+                        </svg>
+                    );
+                case 'screw':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <g transform="rotate(-22 46 34)">
+                                <polygon points="10,35 55,28 55,42" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                                <path d="M22,31 L20,39 M30,30 L28,40 M38,29 L36,41 M46,28 L44,42" stroke="#475569" strokeWidth="2.5" strokeLinecap="round"/>
+                                <ellipse cx="58" cy="35" rx="7" ry="13" fill="#e2e8f0" stroke="#64748b" strokeWidth="2"/>
+                                <path d="M56,29 L60,41 M54,36 L62,34" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round"/>
+                            </g>
+                            <g transform="rotate(-12 60 58)">
+                                <polygon points="24,60 69,53 69,67" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                                <path d="M36,56 L34,64 M44,55 L42,65 M52,54 L50,66 M60,53 L58,67" stroke="#475569" strokeWidth="2.5" strokeLinecap="round"/>
+                                <ellipse cx="72" cy="60" rx="7" ry="13" fill="#f1f5f9" stroke="#64748b" strokeWidth="2"/>
+                                <path d="M70,54 L74,66 M68,61 L76,59" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round"/>
+                            </g>
+                        </svg>
+                    );
+                case 'panel':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <polygon points="10,48 64,24 92,40 38,66" fill="#e6a95c" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="10,48 38,66 38,74 10,56" fill="#b36d28" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="38,66 92,40 92,48 38,74" fill="#c77d32" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="14,36 66,12 90,28 38,54" fill="#f7cc86" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="14,36 38,54 38,62 14,44" fill="#c27a30" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="38,54 90,28 90,36 38,62" fill="#d99041" stroke="#8c4f14" strokeWidth="2" strokeLinejoin="round"/>
+                            <line x1="26" y1="45" x2="78" y2="20" stroke="#b8762e" strokeWidth="1.8"/>
+                        </svg>
+                    );
+                case 'deed':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <g transform="rotate(-8 50 42)">
+                                <rect x="20" y="8" width="58" height="68" rx="4" fill="#fff7e6" stroke="#b58858" strokeWidth="2"/>
+                                <rect x="24" y="12" width="50" height="60" rx="2" fill="none" stroke="#dec096" strokeWidth="1.5"/>
+                                <path d="M44,18 C46,14 52,14 54,18 C57,16 59,20 55,23 L49,27 L43,23 C39,20 41,16 44,18 Z" fill="#e05353"/>
+                                <line x1="32" y1="32" x2="66" y2="32" stroke="#c9a981" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="36" y1="38" x2="62" y2="38" stroke="#c9a981" strokeWidth="2" strokeLinecap="round"/>
+                                <polygon points="36,46 58,44 64,56 32,58" fill="#b4e376" stroke="#6fa832" strokeWidth="1.8" strokeLinejoin="round"/>
+                                <line x1="47" y1="45" x2="48" y2="57" stroke="#6fa832" strokeWidth="1.5"/>
+                                <line x1="34" y1="52" x2="61" y2="50" stroke="#6fa832" strokeWidth="1.5"/>
+                                <circle cx="64" cy="62" r="7" fill="#f2748c" stroke="#c93b56" strokeWidth="1.8"/>
+                                <circle cx="64" cy="62" r="4" fill="none" stroke="#ffdbe2" strokeWidth="1"/>
+                            </g>
+                        </svg>
+                    );
+                case 'hammer':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <path d="M44,32 L72,68 C75,72 67,78 63,73 L36,38 Z" fill="#f3be7a" stroke="#8c5319" strokeWidth="2" strokeLinejoin="round"/>
+                            <path d="M53,44 L73,69 C76,73 66,79 62,74 L44,50 Z" fill="#f46696" stroke="#b52656" strokeWidth="2" strokeLinejoin="round"/>
+                            <line x1="49" y1="53" x2="57" y2="48" stroke="#ff9ec0" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="55" y1="60" x2="63" y2="55" stroke="#ff9ec0" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="61" y1="67" x2="69" y2="62" stroke="#ff9ec0" strokeWidth="2" strokeLinecap="round"/>
+                            <path d="M22,28 C28,18 42,14 58,18 C52,22 48,25 46,30 L34,42 C30,45 20,35 22,28 Z" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" strokeLinejoin="round"/>
+                            <ellipse cx="26" cy="36" rx="7" ry="9" transform="rotate(-35 26 36)" fill="#e2e8f0" stroke="#64748b" strokeWidth="2"/>
+                        </svg>
+                    );
+                case 'stake':
+                    return (
+                        <svg viewBox="0 0 100 85" className={size}>
+                            <path d="M24,68 Q20,58 30,62 Q35,52 44,60 Q52,50 58,60 Q68,54 72,64 Q80,62 76,70 Z" fill="#95d654" stroke="#5c9e23" strokeWidth="2" strokeLinejoin="round"/>
+                            <path d="M52,22 C64,20 74,25 84,22 L72,34 L82,42 C70,45 62,40 50,42 Z" fill="#f76898" stroke="#be295b" strokeWidth="2" strokeLinejoin="round"/>
+                            <polygon points="42,14 54,14 51,64 45,70 40,64" fill="#eab368" stroke="#8c5319" strokeWidth="2" strokeLinejoin="round"/>
+                            <ellipse cx="48" cy="14" rx="6" ry="3" fill="#f7d59c" stroke="#8c5319" strokeWidth="2"/>
+                        </svg>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        // ==========================================
+        // 2. HEADER BANNER ILLUSTRATION (Hay Day Pastel Theme)
+        // ==========================================
+        const HayDayPastelHeader = ({ mode = "store", storeName = "เฮเดย์ฟาร์ม", bannerUrl = "" }) => {
+            if (bannerUrl && bannerUrl.trim() !== '') {
+                return (
+                    <div className="relative w-full overflow-hidden select-none pt-1 pb-2 px-3">
+                        <img
+                            src={bannerUrl.trim()}
+                            alt={storeName}
+                            className="w-full max-h-44 object-cover rounded-2xl border border-[#dce8ce] shadow-sm"
+                        />
+                    </div>
+                );
+            }
+            return (
+                <div className="relative w-full overflow-hidden select-none pt-1 pb-2">
+                    <svg viewBox="0 0 460 158" className="w-full h-auto">
+                        <defs>
+                            <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#d9f0a3"/>
+                                <stop offset="100%" stopColor="#b8df72"/>
+                            </linearGradient>
+                            <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#c5e884"/>
+                                <stop offset="100%" stopColor="#9cd154"/>
+                            </linearGradient>
+                            <linearGradient id="signBoard" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#fffef8"/>
+                                <stop offset="100%" stopColor="#fdf3dc"/>
+                            </linearGradient>
+                            <linearGradient id="ribbonHayDay" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f57884"/>
+                                <stop offset="100%" stopColor="#e35664"/>
+                            </linearGradient>
+                        </defs>
+
+                        {/* Soft Clouds */}
+                        <ellipse cx="65" cy="45" rx="45" ry="22" fill="#ffffff" opacity="0.75"/>
+                        <ellipse cx="390" cy="40" rx="55" ry="25" fill="#ffffff" opacity="0.75"/>
+                        <ellipse cx="230" cy="25" rx="70" ry="22" fill="#ffffff" opacity="0.65"/>
+
+                        {/* Green Rolling Hills & Trees */}
+                        <circle cx="35" cy="98" r="26" fill="#b7e278"/>
+                        <circle cx="65" cy="102" r="22" fill="#c7eb8e"/>
+                        <circle cx="345" cy="98" r="24" fill="#b7e278"/>
+                        <circle cx="430" cy="95" r="28" fill="#b7e278"/>
+                        <path d="M-10,125 Q90,85 210,120 T470,115 L470,158 L-10,158 Z" fill="url(#hillBack)"/>
+
+                        {/* White Cream Wooden Fence Left & Right */}
+                        <g stroke="#d5c4a8" strokeWidth="1.2" fill="#fffdf7">
+                            <rect x="8" y="106" width="10" height="32" rx="3"/>
+                            <rect x="26" y="106" width="10" height="32" rx="3"/>
+                            <rect x="44" y="106" width="10" height="32" rx="3"/>
+                            <rect x="62" y="106" width="10" height="32" rx="3"/>
+                            <rect x="4" y="114" width="74" height="6" rx="2"/>
+                            <rect x="4" y="126" width="74" height="6" rx="2"/>
+
+                            <rect x="388" y="106" width="10" height="32" rx="3"/>
+                            <rect x="406" y="106" width="10" height="32" rx="3"/>
+                            <rect x="424" y="106" width="10" height="32" rx="3"/>
+                            <rect x="442" y="106" width="10" height="32" rx="3"/>
+                            <rect x="384" y="114" width="72" height="6" rx="2"/>
+                            <rect x="384" y="126" width="72" height="6" rx="2"/>
+                        </g>
+
+                        {/* Windmill */}
+                        <polygon points="68,118 73,58 83,58 88,118" fill="#fffaf0" stroke="#c8a87e" strokeWidth="1.8"/>
+                        <g className="windmill-blades">
+                            <line x1="78" y1="26" x2="78" y2="98" stroke="#c88d55" strokeWidth="2.5"/>
+                            <line x1="42" y1="62" x2="114" y2="62" stroke="#c88d55" strokeWidth="2.5"/>
+                            <rect x="72" y="28" width="12" height="22" rx="2" fill="#fbd38d" stroke="#c88d55" strokeWidth="1.5"/>
+                            <rect x="72" y="74" width="12" height="22" rx="2" fill="#fbd38d" stroke="#c88d55" strokeWidth="1.5"/>
+                            <rect x="44" y="56" width="22" height="12" rx="2" fill="#fbd38d" stroke="#c88d55" strokeWidth="1.5"/>
+                            <rect x="90" y="56" width="22" height="12" rx="2" fill="#fbd38d" stroke="#c88d55" strokeWidth="1.5"/>
+                            <circle cx="78" cy="62" r="4.5" fill="#e55b69" stroke="#fff" strokeWidth="1.5"/>
+                        </g>
+
+                        {/* Pastel Hay Day Red-Coral Barn */}
+                        <g>
+                            <polygon points="86,88 118,62 150,88 150,132 86,132" fill="#f37c86" stroke="#b84852" strokeWidth="2" strokeLinejoin="round"/>
+                            <polyline points="82,90 100,70 118,60 136,70 154,90" fill="none" stroke="#ffffff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <rect x="111" y="73" width="14" height="14" rx="2" fill="#fff" stroke="#b84852" strokeWidth="1.8"/>
+                            <line x1="118" y1="73" x2="118" y2="87" stroke="#b84852" strokeWidth="1.5"/>
+                            <line x1="111" y1="80" x2="125" y2="80" stroke="#b84852" strokeWidth="1.5"/>
+                            <rect x="103" y="96" width="30" height="34" rx="2" fill="#f9aeb5" stroke="#ffffff" strokeWidth="2.5"/>
+                            <line x1="103" y1="96" x2="133" y2="130" stroke="#ffffff" strokeWidth="2.5"/>
+                            <line x1="133" y1="96" x2="103" y2="130" stroke="#ffffff" strokeWidth="2.5"/>
+                        </g>
+
+                        {/* Foreground Grass Borders */}
+                        <path d="M-10,134 Q110,115 230,134 T470,128 L470,158 L-10,158 Z" fill="url(#hillFront)"/>
+                        <circle cx="48" cy="142" r="4" fill="#fff"/><circle cx="48" cy="142" r="1.8" fill="#facc15"/>
+                        <circle cx="92" cy="146" r="3.5" fill="#fff"/><circle cx="92" cy="146" r="1.5" fill="#facc15"/>
+                        <circle cx="360" cy="145" r="4" fill="#fff"/><circle cx="360" cy="145" r="1.8" fill="#facc15"/>
+
+                        {/* Store Awning Roof */}
+                        {mode === "store" && (
+                            <g>
+                                <rect x="172" y="38" width="6" height="35" fill="#d99b5b" stroke="#9c6228" strokeWidth="1.5"/>
+                                <rect x="282" y="38" width="6" height="35" fill="#d99b5b" stroke="#9c6228" strokeWidth="1.5"/>
+                                <polygon points="164,8 296,8 308,34 152,34" fill="#fffdf7" stroke="#d4727c" strokeWidth="2" strokeLinejoin="round"/>
+                                <polygon points="164,8 186,8 178,34 152,34" fill="#f5828d"/>
+                                <polygon points="208,8 230,8 230,34 204,34" fill="#f5828d"/>
+                                <polygon points="252,8 274,8 282,34 256,34" fill="#f5828d"/>
+                                <path d="M152,34 A13,11 0 0,0 178,34 A13,11 0 0,0 204,34 A13,11 0 0,0 230,34 A13,11 0 0,0 256,34 A13,11 0 0,0 282,34 A13,11 0 0,0 308,34" fill="#eb6774" stroke="#d4727c" strokeWidth="2"/>
+                            </g>
+                        )}
+
+                        {/* Center Wooden Farm Signboard */}
+                        <g>
+                            <rect x="142" y="56" width="176" height="74" rx="34" fill="url(#signBoard)" stroke="#d9b37c" strokeWidth="3"/>
+                            <rect x="148" y="62" width="164" height="62" rx="28" fill="none" stroke="#ebd4b0" strokeWidth="1.5" strokeDasharray="5,4"/>
+
+                            <path d="M158,95 Q145,86 154,78 Q164,82 162,95 Z" fill="#8fd455" stroke="#579c20" strokeWidth="1.2"/>
+                            <path d="M302,95 Q315,86 306,78 Q296,82 298,95 Z" fill="#8fd455" stroke="#579c20" strokeWidth="1.2"/>
+
+                            <text x="230" y="92" textAnchor="middle" fontSize="24" fontWeight="800" className="title-stroke">
+                                {storeName}
+                            </text>
+
+                            <rect x="172" y="102" width="116" height="22" rx="11" fill="url(#ribbonHayDay)" stroke="#ffffff" strokeWidth="1.5"/>
+                            <text x="230" y="117" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="600">
+                                🌾 ร้านค้าออนไลน์ 🌾
+                            </text>
+                        </g>
+
+                        {/* Cute Fluffy Sheep Mascot */}
+                        <g className="sheep-mascot">
+                            <path d="M318,45 C315,40 308,43 312,49 L318,55 L324,49 C328,43 321,40 318,45 Z" fill="#f47482"/>
+                            <circle cx="352" cy="98" r="18" fill="#fffdf9" stroke="#c8a888" strokeWidth="2"/>
+                            <circle cx="392" cy="98" r="18" fill="#fffdf9" stroke="#c8a888" strokeWidth="2"/>
+                            <circle cx="372" cy="105" r="20" fill="#fffdf9" stroke="#c8a888" strokeWidth="2"/>
+                            <ellipse cx="332" cy="78" rx="11" ry="6" transform="rotate(-25 332 78)" fill="#f9d8c4" stroke="#b58d6b" strokeWidth="2"/>
+                            <ellipse cx="412" cy="78" rx="11" ry="6" transform="rotate(25 412 78)" fill="#f9d8c4" stroke="#b58d6b" strokeWidth="2"/>
+                            <ellipse cx="372" cy="84" rx="24" ry="20" fill="#ffeedd" stroke="#b58d6b" strokeWidth="2"/>
+                            <path d="M346,72 C344,58 360,54 366,62 C372,52 388,54 390,64 C400,60 404,74 396,78 Z" fill="#ffffff" stroke="#c8a888" strokeWidth="2" strokeLinejoin="round"/>
+                            <g transform="translate(388, 56) rotate(18)">
+                                <polygon points="-14,-8 0,0 -14,8" fill="#f57c87" stroke="#b8424e" strokeWidth="1.8" strokeLinejoin="round"/>
+                                <polygon points="14,-8 0,0 14,8" fill="#f57c87" stroke="#b8424e" strokeWidth="1.8" strokeLinejoin="round"/>
+                                <circle cx="0" cy="0" r="4" fill="#ffa8b0" stroke="#b8424e" strokeWidth="1.8"/>
+                            </g>
+                            <circle cx="362" cy="84" r="3" fill="#4a3525"/>
+                            <circle cx="361" cy="83" r="1" fill="#ffffff"/>
+                            <circle cx="382" cy="84" r="3" fill="#4a3525"/>
+                            <circle cx="381" cy="83" r="1" fill="#ffffff"/>
+                            <ellipse cx="354" cy="89" rx="4.5" ry="2.5" fill="#f7949e" opacity="0.65"/>
+                            <ellipse cx="390" cy="89" rx="4.5" ry="2.5" fill="#f7949e" opacity="0.65"/>
+                            <path d="M368,89 Q372,93 376,89" fill="none" stroke="#7a4b2a" strokeWidth="2" strokeLinecap="round"/>
+                            <polygon points="362,105 372,109 362,114" fill="#f57c87" stroke="#b8424e" strokeWidth="1.5"/>
+                            <polygon points="382,105 372,109 382,114" fill="#f57c87" stroke="#b8424e" strokeWidth="1.5"/>
+                            <circle cx="372" cy="111" r="4.5" fill="#fbbf24" stroke="#b45309" strokeWidth="1.5"/>
+                            <ellipse cx="356" cy="116" rx="7" ry="5" fill="#ffeedd" stroke="#b58d6b" strokeWidth="2"/>
+                            <ellipse cx="388" cy="116" rx="7" ry="5" fill="#ffeedd" stroke="#b58d6b" strokeWidth="2"/>
+                        </g>
+                    </svg>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 2.5 TOP TAB BAR WITH LOGO (TAP TO ADMIN), STORE NAME & TRANSPARENT SPINNING VINYL RECORD
+        // ==========================================
+        const TopBrandMusicBar = ({ isPlaying, onToggleMusic, storeName, logoUrl, vinylUrl, onLogoClick }) => {
+            return (
+                <div className="w-full bg-white/85 backdrop-blur-md border-b border-[#e2ecd5] sticky top-0 z-40">
+                    <div className="content-container px-3.5 md:px-6 py-2 flex items-center justify-between">
+                        {/* Left: Store Logo (Tap to open Admin Backoffice) & Store Title */}
+                        <div
+                            onClick={onLogoClick}
+                            title="แตะโลโก้เพื่อเข้าสู่ระบบหลังบ้าน"
+                            className="flex items-center gap-2.5 cursor-pointer group select-none"
+                        >
+                            <img
+                                src={logoUrl}
+                                alt={`${storeName} โลโก้`}
+                                className="w-11 h-11 object-contain drop-shadow-sm group-hover:scale-105 group-active:scale-95 transition-transform"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                            <div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="title-stroke text-xl md:text-2xl font-extrabold tracking-wide leading-none">
+                                        {storeName}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-[#7a6b52] font-medium">
+                                    ร้านไอเทมฟาร์มพาสเทล • บริการส่งไว
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Right: Transparent Spinning Vinyl Record with Floating Music Notes */}
+                        <div className="flex items-center gap-2.5">
+                            <div className="hidden sm:flex flex-col items-end">
+                                <span className="text-[11px] font-bold text-[#4b7c22] flex items-center gap-1">
+                                    <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-500 animate-ping' : 'bg-amber-300'}`}></span>
+                                    {isPlaying ? 'กำลังเล่นเพลงฟาร์ม' : 'แตะแผ่นเสียงเพื่อเปิดเพลง'}
+                                </span>
+                                <span className="text-[10px] text-[#8c7a5b]">Sweet Hay Day Melody ♪</span>
+                            </div>
+
+                            <button
+                                onClick={onToggleMusic}
+                                title={isPlaying ? "แตะเพื่อหยุดเพลง" : "แตะเพื่อเล่นเพลง"}
+                                className="relative w-14 h-14 flex items-center justify-center bg-transparent border-0 p-0 hover:scale-105 active:scale-95 transition-transform"
+                            >
+                                {isPlaying && (
+                                    <div className="absolute inset-0 pointer-events-none overflow-visible">
+                                        <span className="music-note-1 absolute -top-1 left-1 text-[#68b43c] font-black text-sm select-none drop-shadow">♪</span>
+                                        <span className="music-note-2 absolute -top-2 right-1 text-[#e55b69] font-black text-base select-none drop-shadow">♫</span>
+                                        <span className="music-note-3 absolute -top-3 left-5 text-[#d99326] font-black text-xs select-none drop-shadow">♬</span>
+                                    </div>
+                                )}
+
+                                <img
+                                    src={vinylUrl}
+                                    alt="แผ่นเสียงเพลง"
+                                    className={`w-13 h-13 object-contain drop-shadow ${isPlaying ? 'vinyl-spinning' : 'vinyl-paused'}`}
+                                    onError={(e) => {
+                                        e.target.src = "https://placehold.co/80x80/94c64b/ffffff?text=♫";
+                                    }}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // 3. FOOTER GRASS & PICKET FENCE DECORATION
+        // ==========================================
+        const HayDayFooterFence = () => (
+            <div className="w-full mt-auto pt-4 select-none pointer-events-none">
+                <svg viewBox="0 0 460 65" className="w-full h-auto block">
+                    <path d="M0,32 Q115,12 230,32 T460,26 L460,65 L0,65 Z" fill="#bfe686"/>
+                    <g fill="#fffdf7" stroke="#d5c4a8" strokeWidth="1.5">
+                        <rect x="18" y="18" width="14" height="42" rx="4"/>
+                        <rect x="48" y="22" width="14" height="38" rx="4"/>
+                        <rect x="78" y="26" width="14" height="34" rx="4"/>
+                        <rect x="10" y="34" width="90" height="8" rx="3"/>
+
+                        <rect x="368" y="26" width="14" height="34" rx="4"/>
+                        <rect x="398" y="22" width="14" height="38" rx="4"/>
+                        <rect x="428" y="18" width="14" height="42" rx="4"/>
+                        <rect x="360" y="34" width="90" height="8" rx="3"/>
+                    </g>
+                    <path d="M0,45 Q140,30 260,48 T460,40 L460,65 L0,65 Z" fill="#9cd156"/>
+                    <circle cx="135" cy="52" r="4" fill="#fff"/><circle cx="135" cy="52" r="1.8" fill="#fde047"/>
+                    <circle cx="325" cy="50" r="4" fill="#fff"/><circle cx="325" cy="50" r="1.8" fill="#fde047"/>
+                </svg>
+            </div>
+        );
+
+        // ==========================================
+        // 4. PRODUCT CATALOG DATA (Exact 9 Items from Mockup 1)
+        // ==========================================
+        const INITIAL_PRODUCTS = [
+            { id: 1, name: 'ไม้กระดาน', desc: 'แผ่นไม้สำหรับก่อสร้าง', level: 7, price: 5, category: 'โรงนา', svgType: 'plank', imageUrl: '' },
+            { id: 2, name: 'เทปกาว', desc: 'ใช้ติดวัสดุก่อสร้าง', level: 7, price: 5, category: 'โรงนา', svgType: 'tape', imageUrl: '' },
+            { id: 3, name: 'สลักเกลียว', desc: 'ยึดชิ้นส่วนให้แข็งแรง', level: 7, price: 5, category: 'โรงนา', svgType: 'bolt', imageUrl: '' },
+            { id: 4, name: 'ตะปู', desc: 'ใช้ตอกยึดวัสดุ', level: 7, price: 5, category: 'ไซโล', svgType: 'nail', imageUrl: '' },
+            { id: 5, name: 'สกรู', desc: 'ยึดประกอบชิ้นงาน', level: 7, price: 5, category: 'ไซโล', svgType: 'screw', imageUrl: '' },
+            { id: 6, name: 'แผ่นไม้', desc: 'แผ่นไม้หนาใช้งานทั่วไป', level: 7, price: 5, category: 'ไซโล', svgType: 'panel', imageUrl: '' },
+            { id: 7, name: 'โฉนดที่ดิน', desc: 'เอกสารครอบครองที่ดิน', level: 7, price: 10, category: 'ขยายที่', svgType: 'deed', imageUrl: '' },
+            { id: 8, name: 'ค้อน', desc: 'ใช้ตอกและถอดชิ้นส่วน', level: 7, price: 10, category: 'ขยายที่', svgType: 'hammer', imageUrl: '' },
+            { id: 9, name: 'หมุดแบ่งที่', desc: 'กำหนดขอบเขตที่ดิน', level: 7, price: 10, category: 'ขยายที่', svgType: 'stake', imageUrl: '' },
+        ];
+
+        const INITIAL_CATEGORIES = [
+            { id: 'ทั้งหมด', label: 'ทั้งหมด', iconType: 'all' },
+            { id: 'โรงนา', label: 'โรงนา', iconType: 'barn' },
+            { id: 'ไซโล', label: 'ไซโล', iconType: 'silo' },
+            { id: 'ขยายที่', label: 'ขยายที่', iconType: 'land' },
+        ];
+
+        // Auto-generate order prefix abbreviation from Store Name (e.g., "เฮเดย์ฟาร์ม" -> "HD", "Lilith Store" -> "LS")
+        const getStorePrefix = (name = '') => {
+            const clean = name.trim();
+            if (!clean) return 'HF';
+            // Known Thai-to-English smart mapping + general Thai consonant initials
+            if (clean.includes('เฮเดย์')) return 'HD';
+            const thaiToEngMap = {
+                'ก': 'K', 'ข': 'K', 'ค': 'K', 'ฆ': 'K', 'ง': 'N',
+                'จ': 'J', 'ฉ': 'C', 'ช': 'C', 'ซ': 'S', 'ฌ': 'C', 'ญ': 'Y',
+                'ฎ': 'D', 'ฏ': 'T', 'ฐ': 'T', 'ฑ': 'T', 'ฒ': 'T', 'ณ': 'N',
+                'ด': 'D', 'ต': 'T', 'ถ': 'T', 'ท': 'T', 'ธ': 'T', 'น': 'N',
+                'บ': 'B', 'ป': 'P', 'ผ': 'P', 'ฝ': 'F', 'พ': 'P', 'ฟ': 'F', 'ภ': 'P', 'ม': 'M',
+                'ย': 'Y', 'ร': 'R', 'ล': 'L', 'ว': 'W', 'ศ': 'S', 'ษ': 'S', 'ส': 'S', 'ห': 'H', 'ฬ': 'L', 'อ': 'O', 'ฮ': 'H'
+            };
+            const words = clean.split(/\s+/);
+            if (words.length >= 2) {
+                const letters = words.slice(0, 2).map(w => {
+                    const ch = w.replace(/[^A-Za-zก-ฮ]/g, '')[0] || '';
+                    return /[A-Za-z]/.test(ch) ? ch.toUpperCase() : (thaiToEngMap[ch] || 'F');
+                });
+                return letters.join('');
+            }
+            const lettersOnly = clean.replace(/[^A-Za-zก-ฮ]/g, '');
+            const first = lettersOnly[0] || 'H';
+            const second = lettersOnly[Math.min(2, lettersOnly.length - 1)] || 'F';
+            const c1 = /[A-Za-z]/.test(first) ? first.toUpperCase() : (thaiToEngMap[first] || 'H');
+            const c2 = /[A-Za-z]/.test(second) ? second.toUpperCase() : (thaiToEngMap[second] || 'F');
+            return `${c1}${c2}`;
+        };
+
+        // Sample Order matching Mockups 2, 3, 4, 5 for instant preview
+        // itemStatus: 'pending' | 'sent' (เขียว-ส่งแล้ว) | 'waiting' (เหลือง-รอลูกค้ารับของ) | 'out' (แดง-ของหมด)
+        const SAMPLE_INITIAL_ORDER = {
+            code: 'HD41928',
+            tag: '#L123',
+            items: [
+                { ...INITIAL_PRODUCTS[0], qty: 2, itemStatus: 'sent' },     // ไม้กระดาน x2 = 10 (ส่งแล้ว)
+                { ...INITIAL_PRODUCTS[1], qty: 1, itemStatus: 'waiting' },  // เทปกาว x1 = 5 (รอลูกค้ารับของ)
+            ],
+            totalQty: 3,
+            totalPrice: 15,
+            status: 'กำลังจัดส่ง',
+            isDemoSample: true,
+            createdAt: 'ตัวอย่างออเดอร์เริ่มต้น (Demo)'
+        };
+
+        // Helper to summarize item statuses inside an order
+        const getOrderFulfillmentSummary = (items = []) => {
+            const sentItems = items.filter(i => i.itemStatus === 'sent');
+            const waitingItems = items.filter(i => i.itemStatus === 'waiting');
+            const outItems = items.filter(i => i.itemStatus === 'out');
+            const pendingItems = items.filter(i => !i.itemStatus || i.itemStatus === 'pending');
+
+            return {
+                sentQty: sentItems.reduce((s, i) => s + i.qty, 0),
+                sentList: sentItems.map(i => `${i.name} ×${i.qty}`),
+                waitingQty: waitingItems.reduce((s, i) => s + i.qty, 0),
+                waitingList: waitingItems.map(i => `${i.name} ×${i.qty}`),
+                outQty: outItems.reduce((s, i) => s + i.qty, 0),
+                outList: outItems.map(i => `${i.name} ×${i.qty}`),
+                pendingQty: pendingItems.reduce((s, i) => s + i.qty, 0),
+            };
+        };
+
+        // ==========================================
+        // 5. MAIN APPLICATION COMPONENT
+        // ==========================================
+        const App = () => {
+            // Current screen: 'store' | 'cart' | 'checkout' | 'success' | 'details' | 'admin'
+            const [screen, setScreen] = useState('store');
+            const [adminTab, setAdminTab] = useState('orders'); // 'orders' | 'products' | 'categories' | 'branding'
+
+            // Dynamic Catalog, Categories & Branding states (Editable via Admin Backoffice)
+            const [products, setProducts] = useState(INITIAL_PRODUCTS);
+            const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+            const [branding, setBranding] = useState({
+                storeName: 'เฮเดย์ฟาร์ม',
+                logoUrl: 'https://i.postimg.cc/zfrmBBy9/mi-m-ch-x-63-20261119032321.png',
+                cartPngUrl: 'https://i.postimg.cc/zfrmBBy9/mi-m-ch-x-63-20261119032321.png',
+                vinylPngUrl: 'https://i.postimg.cc/y8fQq8Fx/mi-m-ch-x-63-20261119032629.png',
+                bannerUrl: ''
+            });
+
+            // Admin form states for adding/editing products & categories
+            const [newProdForm, setNewProdForm] = useState({ name: '', desc: '', level: 7, price: 5, category: 'โรงนา', svgType: 'plank', imageUrl: '' });
+            const [editingProdId, setEditingProdId] = useState(null);
+            const [newCatName, setNewCatName] = useState('');
+
+            const [selectedCat, setSelectedCat] = useState('ทั้งหมด');
+            const [searchName, setSearchName] = useState('');
+            const [searchLevel, setSearchLevel] = useState('');
+
+            // Animation & Floating Cart Notification states
+            const [bouncingId, setBouncingId] = useState(null);
+            const [cartNotice, setCartNotice] = useState(null);
+            const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
+            const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+            const [audioStarted, setAudioStarted] = useState(false);
+
+            // Pre-populate cart with 2 Planks & 1 Tape (matching Mockup 2) so user can test immediately
+            const [cart, setCart] = useState([
+                { ...INITIAL_PRODUCTS[0], qty: 2 },
+                { ...INITIAL_PRODUCTS[1], qty: 1 }
+            ]);
+
+            const [receiveTag, setReceiveTag] = useState('#L123');
+            const [orders, setOrders] = useState([SAMPLE_INITIAL_ORDER]);
+            const [activeOrderCode, setActiveOrderCode] = useState(SAMPLE_INITIAL_ORDER.code);
+            const [toast, setToast] = useState(null);
+
+            const activeOrder = orders.find(o => o.code === activeOrderCode) || orders[0];
+
+            const showToast = (msg) => {
+                setToast(msg);
+                setTimeout(() => setToast(null), 2200);
+            };
+
+            // Auto-collapse the expanded notification bubble into compact capsule after 2.5s
+            useEffect(() => {
+                if (!cartNotice || !isNoticeExpanded) return;
+                const timer = setTimeout(() => {
+                    setIsNoticeExpanded(false);
+                }, 2500);
+                return () => clearTimeout(timer);
+            }, [cartNotice, isNoticeExpanded]);
+
+            // Gentle music box chime using Tone.js when vinyl record is toggled
+            const toggleMusic = async () => {
+                const nextState = !isMusicPlaying;
+                setIsMusicPlaying(nextState);
+                try {
+                    if (window.Tone && nextState && !audioStarted) {
+                        await Tone.start();
+                        const synth = new Tone.PolySynth(Tone.Synth, {
+                            oscillator: { type: "sine" },
+                            envelope: { attack: 0.08, decay: 0.3, sustain: 0.2, release: 1.2 }
+                        }).toDestination();
+                        synth.volume.value = -16;
+                        const notes = ["C5", "E5", "G5", "A5", "G5", "E5"];
+                        notes.forEach((n, idx) => {
+                            synth.triggerAttackRelease(n, "8n", Tone.now() + idx * 0.28);
+                        });
+                        setAudioStarted(true);
+                    }
+                } catch (err) {
+                    // Fallback silently if browser blocks autoplay
+                }
+            };
+
+            // Cart Calculations
+            const totalItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalCartPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            const handleAddProduct = (product) => {
+                setBouncingId(product.id);
+                setTimeout(() => {
+                    setBouncingId(prev => (prev === product.id ? null : prev));
+                }, 440);
+
+                try {
+                    if (window.Tone && Tone.context.state === 'running') {
+                        const popSynth = new Tone.Synth({
+                            oscillator: { type: "triangle" },
+                            envelope: { attack: 0.005, decay: 0.09, sustain: 0, release: 0.09 }
+                        }).toDestination();
+                        popSynth.volume.value = -14;
+                        popSynth.triggerAttackRelease("G5", "32n");
+                    }
+                } catch (e) {}
+
+                setCart(prev => {
+                    const found = prev.find(i => i.id === product.id);
+                    let updated;
+                    if (found) {
+                        updated = prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+                    } else {
+                        updated = [...prev, { ...product, qty: 1 }];
+                    }
+
+                    const newTotalQty = updated.reduce((s, i) => s + i.qty, 0);
+                    const newTotalPrice = updated.reduce((s, i) => s + i.price * i.qty, 0);
+
+                    setCartNotice({
+                        lastAddedName: product.name,
+                        itemsSummary: updated.map(i => `${i.name} ×${i.qty}`).join(', '),
+                        totalQty: newTotalQty,
+                        totalPrice: newTotalPrice
+                    });
+                    setIsNoticeExpanded(true);
+
+                    return updated;
+                });
+            };
+
+            const handleUpdateQty = (id, delta) => {
+                setCart(prev => prev.map(item => {
+                    if (item.id === id) {
+                        const nextQty = item.qty + delta;
+                        return nextQty > 0 ? { ...item, qty: nextQty } : null;
+                    }
+                    return item;
+                }).filter(Boolean));
+            };
+
+            const handleConfirmOrder = () => {
+                const cleanTag = receiveTag.trim() ? (receiveTag.trim().startsWith('#') ? receiveTag.trim() : `#${receiveTag.trim()}`) : '#L123';
+                const prefix = getStorePrefix(branding.storeName);
+                const randomCode = prefix + Math.floor(10000 + Math.random() * 90000);
+                const newOrder = {
+                    code: randomCode,
+                    tag: cleanTag,
+                    items: cart.map(item => ({ ...item, itemStatus: 'pending' })),
+                    totalQty: totalItemsCount,
+                    totalPrice: totalCartPrice,
+                    status: 'รอจัดส่ง',
+                    isDemoSample: false,
+                    createdAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+                };
+                setOrders(prev => [newOrder, ...prev]);
+                setActiveOrderCode(newOrder.code);
+                setScreen('success');
+                showToast('สร้างคำสั่งซื้อสำเร็จ! (โหมด Demo)');
+            };
+
+            const handleDeleteOrder = (orderCode) => {
+                setOrders(prev => {
+                    const remaining = prev.filter(o => o.code !== orderCode);
+                    if (activeOrderCode === orderCode) {
+                        if (remaining.length > 0) {
+                            setActiveOrderCode(remaining[0].code);
+                        } else {
+                            setActiveOrderCode(null);
+                            if (screen === 'details' || screen === 'success') {
+                                setScreen('store');
+                            }
+                        }
+                    }
+                    return remaining;
+                });
+                showToast(`ลบออเดอร์ ${orderCode} เรียบร้อยแล้ว`);
+            };
+
+            const copyText = (text, label) => {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                try {
+                    document.execCommand('copy');
+                    showToast(`คัดลอก${label}เรียบร้อยแล้ว`);
+                } catch (e) {
+                    showToast('คัดลอกสำเร็จ');
+                }
+                document.body.removeChild(el);
+            };
+
+            // Tap-to-cycle item fulfillment status in Admin:
+            // pending -> sent (1 tap: เขียว ส่งแล้ว) -> waiting (2 taps: เหลือง รอลูกค้ารับของ) -> out (3 taps: แดง ของหมด) -> pending
+            const cycleOrderItemStatus = (orderCode, itemId) => {
+                const statusCycle = ['pending', 'sent', 'waiting', 'out'];
+                const statusLabels = {
+                    pending: 'ยังไม่ระบุ',
+                    sent: 'สีเขียว: ส่งแล้ว',
+                    waiting: 'สีเหลือง: รอลูกค้ารับของ',
+                    out: 'สีแดง: ของหมด'
+                };
+
+                setOrders(prev => prev.map(order => {
+                    if (order.code !== orderCode) return order;
+                    let nextLabel = '';
+                    const updatedItems = order.items.map(item => {
+                        if (item.id !== itemId) return item;
+                        const currIdx = statusCycle.indexOf(item.itemStatus || 'pending');
+                        const nextStatus = statusCycle[(currIdx + 1) % statusCycle.length];
+                        nextLabel = statusLabels[nextStatus];
+                        return { ...item, itemStatus: nextStatus };
+                    });
+                    if (nextLabel) showToast(`เปลี่ยนสถานะเป็น ${nextLabel}`);
+                    return { ...order, items: updatedItems };
+                }));
+            };
+
+            // Admin Product CRUD
+            const handleSaveProduct = (e) => {
+                e.preventDefault();
+                if (!newProdForm.name.trim()) return;
+                if (editingProdId) {
+                    setProducts(prev => prev.map(p => p.id === editingProdId ? { ...p, ...newProdForm, level: Number(newProdForm.level) || 1, price: Number(newProdForm.price) || 0 } : p));
+                    setEditingProdId(null);
+                    showToast('แก้ไขข้อมูลสินค้าเรียบร้อย');
+                } else {
+                    const created = {
+                        ...newProdForm,
+                        id: Date.now(),
+                        level: Number(newProdForm.level) || 1,
+                        price: Number(newProdForm.price) || 0
+                    };
+                    setProducts(prev => [...prev, created]);
+                    showToast('เพิ่มสินค้าใหม่เรียบร้อย');
+                }
+                setNewProdForm({ name: '', desc: '', level: 7, price: 5, category: categories[1]?.id || 'โรงนา', svgType: 'plank', imageUrl: '' });
+            };
+
+            const handleDeleteProduct = (id) => {
+                setProducts(prev => prev.filter(p => p.id !== id));
+                showToast('ลบสินค้าเรียบร้อย');
+            };
+
+            // Admin Category CRUD
+            const handleAddCategory = (e) => {
+                e.preventDefault();
+                const trimmed = newCatName.trim();
+                if (!trimmed) return;
+                if (categories.some(c => c.id === trimmed)) {
+                    showToast('มีหมวดหมู่นี้อยู่แล้ว');
+                    return;
+                }
+                setCategories(prev => [...prev, { id: trimmed, label: trimmed, iconType: 'custom' }]);
+                setNewCatName('');
+                showToast(`เพิ่มหมวดหมู่ "${trimmed}" แล้ว`);
+            };
+
+            const handleDeleteCategory = (id) => {
+                if (id === 'ทั้งหมด') return;
+                setCategories(prev => prev.filter(c => c.id !== id));
+                if (selectedCat === id) setSelectedCat('ทั้งหมด');
+                showToast(`ลบหมวดหมู่ "${id}" แล้ว`);
+            };
+
+            // Filter products with separated Product Name search and Level filter
+            const filteredProducts = products.filter(p => {
+                const matchCat = selectedCat === 'ทั้งหมด' || p.category === selectedCat;
+                const nameQ = searchName.trim().toLowerCase();
+                const levelQ = searchLevel.trim().replace(/[^0-9]/g, '');
+
+                const matchName = !nameQ || p.name.toLowerCase().includes(nameQ) || p.desc.toLowerCase().includes(nameQ);
+                const matchLevel = !levelQ || String(p.level).includes(levelQ);
+
+                return matchCat && matchName && matchLevel;
+            });
+
+            // Render Category Icon Helper
+            const renderCategoryIcon = (iconType) => {
+                switch (iconType) {
+                    case 'all':
+                        return (
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                            </svg>
+                        );
+                    case 'barn':
+                        return (
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                                <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1H4a1 1 0 01-1-1V10z"/>
+                                <path d="M9 21V13h6v8M9 13l6 8M15 13l-6 8"/>
+                            </svg>
+                        );
+                    case 'silo':
+                        return (
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M6 10a6 6 0 0112 0v10H6V10z"/>
+                                <path d="M6 14h12M6 18h12M4 20h16"/>
+                            </svg>
+                        );
+                    case 'land':
+                        return (
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 6v14M12 6v14M20 6v14M2 10h20M2 16h20"/>
+                            </svg>
+                        );
+                    default:
+                        return <span className="text-base leading-none">🌾</span>;
+                }
+            };
+
+            // Build neat, well-structured order copy text including website/store name, items, tag, and polite waiting note
+            const formatOrderCopyText = (order) => {
+                if (!order) return '';
+                const lines = order.items.map((i, idx) => `  ${idx + 1}. ${i.name} ×${i.qty} = ฿${i.price * i.qty}`).join('\n');
+                return [
+                    `🌾 สั่งซื้อจากเว็บ: ${branding.storeName}`,
+                    `🧾 โค้ดออเดอร์: ${order.code}`,
+                    `🏷️ แท็กรับของ: ${order.tag}`,
+                    `━━━━━━━━━━━━━━`,
+                    `📦 รายการสินค้า:`,
+                    lines,
+                    `━━━━━━━━━━━━━━`,
+                    `💰 ยอดรวมทั้งหมด: ${order.totalQty} ชิ้น (฿${order.totalPrice})`,
+                    ``,
+                    `✨ คัดลอกออเดอร์ส่งให้ร้านเรียบร้อยแล้ว กรุณารออย่างใจเย็นไม่ดันแชทนะคะ 🙏`
+                ].join('\n');
+            };
+
+            return (
+                <div className="app-wrapper">
+                    {/* Floating Toast Alert */}
+                    {toast && (
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#556b2f] text-white px-5 py-2 rounded-full shadow-lg border border-[#b8d896] text-xs font-semibold flex items-center gap-2">
+                            <span>🌾</span> {toast}
+                        </div>
+                    )}
+
+                    {/* Top Brand Tab Bar with Logo (Tap Logo to enter Admin), Store Name & Spinning Vinyl Record */}
+                    <TopBrandMusicBar
+                        isPlaying={isMusicPlaying}
+                        onToggleMusic={toggleMusic}
+                        storeName={branding.storeName}
+                        logoUrl={branding.logoUrl}
+                        vinylUrl={branding.vinylPngUrl}
+                        onLogoClick={() => setScreen(prev => (prev === 'admin' ? 'store' : 'admin'))}
+                    />
+
+                    {/* Floating Right-Side Transparent PNG Cart Button (No circle frame, larger size, auto-minimizing alert) */}
+                    <div className="fixed right-3 md:right-6 bottom-24 md:bottom-28 z-40 flex flex-col items-end gap-1.5 pointer-events-none">
+                        {/* Stage 1: Full Notification Bubble (Shows for ~2.5s when item picked) */}
+                        {cartNotice && isNoticeExpanded && (
+                            <div
+                                key={`${cartNotice.lastAddedName}-${cartNotice.totalQty}`}
+                                className="cart-bubble-pop pointer-events-auto max-w-[235px] sm:max-w-[265px] bg-white/95 backdrop-blur-md border border-[#cde3b4] rounded-2xl p-2.5 shadow-lg text-left relative"
+                            >
+                                <button
+                                    onClick={() => setIsNoticeExpanded(false)}
+                                    className="absolute top-1.5 right-2 text-[11px] text-[#7a8f62] hover:text-[#4b6b28] font-bold"
+                                    aria-label="ย่อแจ้งเตือน"
+                                >
+                                    ✕
+                                </button>
+                                <div className="text-[11px] font-bold text-[#4b7c22] mb-1 pr-4">
+                                    ✨ เพิ่ม: {cartNotice.lastAddedName}
+                                </div>
+                                <p className="text-[11px] text-[#556b2f] font-medium line-clamp-2 leading-snug bg-[#f7fbf2] px-2 py-1 rounded-xl border border-[#e7f1dc]">
+                                    {cartNotice.itemsSummary}
+                                </p>
+                                <div className="mt-1.5 pt-1.5 border-t border-[#ebf3e1] flex items-center justify-between">
+                                    <span className="text-[11px] font-semibold text-[#556b2f]">
+                                        รวม {cartNotice.totalQty} ชิ้น • <strong className="text-[#e55b69]">฿{cartNotice.totalPrice}</strong>
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setIsNoticeExpanded(false);
+                                            setScreen('cart');
+                                        }}
+                                        className="text-[11px] font-bold bg-[#68b43c] text-white px-2.5 py-0.5 rounded-full active:scale-95"
+                                    >
+                                        ดูสรุป →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Stage 2: Compact Cute Summary Pill (Shown after ~2.5s or whenever items exist in cart) */}
+                        {(!isNoticeExpanded && totalItemsCount > 0) && (
+                            <button
+                                onClick={() => setScreen('cart')}
+                                className="pointer-events-auto bg-white/95 backdrop-blur-sm border border-[#cde3b4] text-[#4a3b2c] px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 text-[11px] font-bold hover:scale-105 active:scale-95 transition-transform"
+                            >
+                                <span>🧺 {totalItemsCount} ชิ้น</span>
+                                <span className="text-[#cde3b4]">•</span>
+                                <span className="text-[#e55b69] font-extrabold">฿{totalCartPrice}</span>
+                            </button>
+                        )}
+
+                        {/* Transparent Enlarged Custom PNG Cart Button (No Circle Frame) */}
+                        <button
+                            onClick={() => setScreen('cart')}
+                            className="floating-cart-btn pointer-events-auto relative group bg-transparent border-0 p-0 focus:outline-none"
+                            aria-label="เปิดตะกร้าสรุปรายการสินค้า"
+                        >
+                            <img
+                                src={branding.cartPngUrl}
+                                alt="ตะกร้าสินค้า"
+                                className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-[0_6px_12px_rgba(92,115,64,0.28)] group-hover:scale-105 group-active:scale-90 transition-transform"
+                                onError={(e) => {
+                                    e.target.src = "https://placehold.co/112x112/86cf58/ffffff?text=Cart";
+                                }}
+                            />
+
+                            {/* Minimal Item Count Badge */}
+                            <div className="absolute top-1 right-1 bg-[#e55b69] text-white text-[11px] font-bold min-w-[22px] h-[22px] px-1 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                {totalItemsCount}
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* ==========================================
+                        SCREEN 1: STOREFRONT (Compact 1:1 Cards, No Bottom Red-Circled CTA Bar)
+                       ========================================== */}
+                    {screen === 'store' && (
+                        <div className="flex flex-col flex-1 pb-12">
+                            <div className="content-container">
+                                <HayDayPastelHeader mode="store" storeName={branding.storeName} bannerUrl={branding.bannerUrl} />
+                            </div>
+
+                            <div className="content-container px-3.5 md:px-6 space-y-3">
+                                {/* Category Buttons Row (Dynamic from Categories state) */}
+                                <div className="grid grid-cols-4 gap-2 md:gap-3">
+                                    {categories.map(tab => {
+                                        const isActive = selectedCat === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setSelectedCat(tab.id)}
+                                                className={`py-2 px-2 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all ${isActive ? 'tab-active' : 'tab-inactive'}`}
+                                            >
+                                                <div className={isActive ? 'text-white' : 'text-[#68b43c]'}>{renderCategoryIcon(tab.iconType)}</div>
+                                                <span className="text-xs sm:text-sm md:text-base font-bold tracking-tight truncate max-w-full">{tab.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Separated Search Inputs: 1. Product Name Search  2. Level Filter */}
+                                <div className="grid grid-cols-12 gap-2">
+                                    {/* Search by Product Name */}
+                                    <div className="col-span-7 sm:col-span-8 bg-white rounded-full px-3.5 py-2 border border-[#dce8ce] shadow-sm flex items-center gap-2 focus-within:border-[#68b43c] transition-colors">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#68b43c] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.3">
+                                            <circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4" strokeLinecap="round"/>
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            value={searchName}
+                                            onChange={e => setSearchName(e.target.value)}
+                                            placeholder="ค้นหาชื่อสินค้า..."
+                                            className="w-full bg-transparent outline-none text-[#4a3b2c] placeholder-[#9ba88c] font-medium text-xs sm:text-sm"
+                                        />
+                                        {searchName && (
+                                            <button onClick={() => setSearchName('')} className="text-xs text-[#8ea17a] hover:text-[#4b6b28] font-bold">✕</button>
+                                        )}
+                                    </div>
+
+                                    {/* Filter by Level (Separated Input) */}
+                                    <div className="col-span-5 sm:col-span-4 bg-white rounded-full px-3 py-2 border border-[#dce8ce] shadow-sm flex items-center gap-1.5 focus-within:border-[#68b43c] transition-colors">
+                                        <span className="bg-[#eef8e3] text-[#4b7c22] text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+                                            เลเวล
+                                        </span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={searchLevel}
+                                            onChange={e => setSearchLevel(e.target.value)}
+                                            placeholder="กรอกเวล..."
+                                            className="w-full bg-transparent outline-none text-[#4a3b2c] placeholder-[#9ba88c] font-semibold text-xs sm:text-sm"
+                                        />
+                                        {searchLevel && (
+                                            <button onClick={() => setSearchLevel('')} className="text-xs text-[#8ea17a] hover:text-[#4b6b28] font-bold">✕</button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Compact Product Grid with 1:1 Image Aspect Ratio */}
+                                {filteredProducts.length === 0 ? (
+                                    <div className="card-pastel p-8 text-center space-y-2">
+                                        <p className="text-[#4a3b2c] font-bold text-sm">ไม่พบสินค้าที่ค้นหา</p>
+                                        <button
+                                            onClick={() => { setSearchName(''); setSearchLevel(''); setSelectedCat('ทั้งหมด'); }}
+                                            className="text-xs font-bold text-[#68b43c] underline"
+                                        >
+                                            ล้างตัวกรองทั้งหมด
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 md:gap-3.5 pt-0.5">
+                                        {filteredProducts.map(item => {
+                                            const inCart = cart.find(c => c.id === item.id);
+                                            const isBouncing = bouncingId === item.id;
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => handleAddProduct(item)}
+                                                    className={`card-pastel p-2 md:p-3 flex flex-col items-center text-center relative cursor-pointer select-none ${isBouncing ? 'card-squish-anim' : ''}`}
+                                                >
+                                                    {/* Top-Right Level Badge (Pastel Straw-Gold) */}
+                                                    <div className="absolute top-1.5 right-1.5 bg-[#f7c85c] text-[#5c3d08] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#ffe299] z-10">
+                                                        เวล {item.level}
+                                                    </div>
+
+                                                    {/* Quantity badge if in cart */}
+                                                    {inCart && (
+                                                        <div className="absolute top-1.5 left-1.5 bg-[#68b43c] text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm border border-white z-10">
+                                                            {inCart.qty}
+                                                        </div>
+                                                    )}
+
+                                                    {/* 1:1 Square Image Frame (Supports 1:1 images cleanly without tall cards) */}
+                                                    <div className="w-full aspect-square max-w-[92px] md:max-w-[110px] mx-auto bg-gradient-to-b from-[#fafdf6] to-[#f1f8e8] rounded-2xl flex items-center justify-center mb-1.5 p-1.5 border border-[#e7f1dc]">
+                                                        <ItemIllustration type={item.svgType} imageUrl={item.imageUrl} size="w-full h-full object-contain" />
+                                                    </div>
+
+                                                    <h3 className="font-bold text-[#4a3b2c] text-[13px] md:text-sm leading-tight">{item.name}</h3>
+                                                    <p className="text-[#7c8770] text-[10px] leading-tight mt-0.5 line-clamp-1">{item.desc}</p>
+                                                    <div className="mt-1 text-[11px] font-bold text-[#e55b69] bg-[#fff5f6] px-2.5 py-0.5 rounded-full border border-[#fadadd]">
+                                                        ฿{item.price} / ชิ้น
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ==========================================
+                        SCREEN 2: CART SUMMARY (Minimalist Hay Day Pastel)
+                       ========================================== */}
+                    {screen === 'cart' && (
+                        <div className="flex flex-col flex-1">
+                            <div className="content-container max-w-2xl">
+                                <HayDayPastelHeader mode="sub" storeName={branding.storeName} bannerUrl={branding.bannerUrl} />
+                            </div>
+
+                            <div className="content-container max-w-2xl px-4 space-y-3 flex-1 pb-8">
+                                {/* Top Navigation Bar */}
+                                <div className="nav-pill px-3 py-2 flex items-center justify-between">
+                                    <button
+                                        onClick={() => setScreen('store')}
+                                        className="w-8 h-8 rounded-full bg-[#f4fae9] border border-[#d6e8c2] flex items-center justify-center text-[#556b2f] font-bold text-base active:scale-95"
+                                    >
+                                        ❮
+                                    </button>
+                                    <div className="flex items-center gap-2 text-[#4a3b2c] font-extrabold text-lg">
+                                        <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#68b43c]" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                            <circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/>
+                                            <path d="M2 3h3l2.6 12.4a2 2 0 002 1.6h9.8a2 2 0 002-1.6L23 7H6"/>
+                                        </svg>
+                                        <span>รวมยอดสินค้า</span>
+                                    </div>
+                                    <div className="w-8"></div>
+                                </div>
+
+                                {/* Cart Items List */}
+                                {cart.length === 0 ? (
+                                    <div className="card-pastel p-8 text-center space-y-3">
+                                        <p className="text-[#4a3b2c] font-bold text-base">ยังไม่มีสินค้าในตะกร้า</p>
+                                        <button
+                                            onClick={() => {
+                                                setCart([{ ...products[0], qty: 2 }, { ...products[1], qty: 1 }]);
+                                                showToast('โหลดสินค้าตัวอย่างตามภาพต้นแบบแล้ว');
+                                            }}
+                                            className="btn-pink-3d px-5 py-2 text-xs font-bold"
+                                        >
+                                            + โหลดสินค้าตัวอย่าง (ไม้กระดาน & เทปกาว)
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {cart.map(item => (
+                                            <div key={item.id} className="card-pastel p-3 flex items-center justify-between">
+                                                {/* Left 1:1 Item Thumbnail */}
+                                                <div className="w-16 h-16 aspect-square bg-[#f7fbf2] rounded-2xl border border-[#e3eed6] flex items-center justify-center flex-shrink-0 mr-3 p-1">
+                                                    <ItemIllustration type={item.svgType} imageUrl={item.imageUrl} size="w-full h-full object-contain" />
+                                                </div>
+
+                                                {/* Middle Name & +/- Controls */}
+                                                <div className="flex-1">
+                                                    <h3 className="font-bold text-[#4a3b2c] text-base mb-1.5">{item.name}</h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => handleUpdateQty(item.id, -1)}
+                                                            className="w-8 h-8 rounded-full btn-circle-minus flex items-center justify-center text-lg font-bold"
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <div className="w-12 h-8 bg-[#fafdf7] border border-[#dce8ce] rounded-xl flex items-center justify-center font-bold text-[#4a3b2c] text-base">
+                                                            {item.qty}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleUpdateQty(item.id, 1)}
+                                                            className="w-8 h-8 rounded-full btn-circle-plus flex items-center justify-center text-lg font-bold"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Vertical Divider & Subtotal */}
+                                                <div className="pl-3 ml-2 border-l border-[#e6efdb] text-center min-w-[72px]">
+                                                    <div className="text-[11px] font-semibold text-[#7a8f62] mb-0.5">ยอดรวม</div>
+                                                    <div className="text-2xl font-extrabold text-[#e55b69]">฿{item.price * item.qty}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Total Summary Bar */}
+                                <div className="card-pastel px-5 py-3.5 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-[#4a3b2c] font-bold text-base">
+                                        <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#68b43c]" fill="none" stroke="currentColor" strokeWidth="2.1">
+                                            <path d="M5 10h14l-1.5 9h-11L5 10z"/><path d="M9 10L12 5l3 5"/>
+                                        </svg>
+                                        <span>สินค้า {totalItemsCount} ชิ้น</span>
+                                    </div>
+                                    <div className="h-6 w-[1px] bg-[#e2ecd5]"></div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-[#4a3b2c] font-bold text-base">ยอดรวม</span>
+                                        <span className="text-[#e55b69] font-extrabold text-2xl">฿{totalCartPrice}</span>
+                                    </div>
+                                </div>
+
+                                {/* Proceed Button */}
+                                <div className="pt-1">
+                                    <button
+                                        disabled={cart.length === 0}
+                                        onClick={() => setScreen('checkout')}
+                                        className="w-full btn-pink-3d py-3.5 text-xl font-bold flex items-center justify-center gap-2.5 disabled:opacity-50"
+                                    >
+                                        <span>ดำเนินการต่อ</span>
+                                        <span>→</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <HayDayFooterFence />
+                        </div>
+                    )}
+
+                    {/* ==========================================
+                        SCREEN 3: CONFIRM ORDER (Minimalist Hay Day Pastel)
+                       ========================================== */}
+                    {screen === 'checkout' && (
+                        <div className="flex flex-col flex-1">
+                            <div className="content-container max-w-2xl">
+                                <HayDayPastelHeader mode="sub" storeName={branding.storeName} bannerUrl={branding.bannerUrl} />
+                            </div>
+
+                            <div className="content-container max-w-2xl px-4 space-y-3 flex-1 pb-8">
+                                {/* Top Bar */}
+                                <div className="nav-pill px-3 py-2 flex items-center justify-between">
+                                    <button
+                                        onClick={() => setScreen('cart')}
+                                        className="w-8 h-8 rounded-full bg-[#f4fae9] border border-[#d6e8c2] flex items-center justify-center text-[#556b2f] font-bold text-base"
+                                    >
+                                        ❮
+                                    </button>
+                                    <h2 className="text-[#4a3b2c] font-extrabold text-lg">ยืนยันออเดอร์</h2>
+                                    <div className="w-8"></div>
+                                </div>
+
+                                {/* 3-Step Progress Bar */}
+                                <div className="px-4 py-1 relative flex items-center justify-between">
+                                    <div className="absolute left-12 right-12 top-5 h-0.5 bg-[#b8db92] z-0"></div>
+
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <div className="w-9 h-9 rounded-full bg-[#86cf58] border border-white shadow-sm flex items-center justify-center text-white font-bold text-base">✓</div>
+                                        <span className="text-xs font-semibold text-[#556b2f] mt-1">เลือกสินค้า</span>
+                                    </div>
+
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <div className="w-9 h-9 rounded-full bg-[#86cf58] border border-white shadow-sm flex items-center justify-center text-white font-bold text-base">✓</div>
+                                        <span className="text-xs font-semibold text-[#556b2f] mt-1">รวมยอด</span>
+                                    </div>
+
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <div className="w-9 h-9 rounded-full bg-[#e55b69] border border-white shadow-sm flex items-center justify-center text-white font-bold text-base">3</div>
+                                        <span className="text-xs font-bold text-[#4a3b2c] mt-1">ยืนยันออเดอร์</span>
+                                    </div>
+                                </div>
+
+                                {/* Tag Input Section */}
+                                <div>
+                                    <label className="flex items-center gap-1.5 text-[#4a3b2c] font-bold text-sm mb-1.5">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#68b43c]" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/>
+                                        </svg>
+                                        <span>แท็กรับของ <span className="text-[#e55b69]">*</span></span>
+                                    </label>
+                                    <div className="bg-white rounded-full px-4 py-2 border border-[#cfe3b8] shadow-sm flex items-center gap-3 focus-within:border-[#68b43c]">
+                                        <span className="text-[#68b43c] font-bold text-base pr-3 border-r border-[#e4edd8]">#</span>
+                                        <input
+                                            type="text"
+                                            value={receiveTag}
+                                            onChange={e => setReceiveTag(e.target.value)}
+                                            placeholder="#L123"
+                                            className="w-full bg-transparent outline-none font-bold text-[#4a3b2c] placeholder-[#9ba88c] text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Order Item List Summary Card */}
+                                <div className="card-pastel overflow-hidden">
+                                    <div className="bg-[#f3f9eb] px-4 py-2 border-b border-[#e2ecd5] flex items-center gap-2 text-[#4b6b28] font-bold text-sm">
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#68b43c]" fill="none" stroke="currentColor" strokeWidth="2.1">
+                                            <path d="M5 10h14l-1.5 9h-11L5 10z"/><path d="M9 10L12 5l3 5"/>
+                                        </svg>
+                                        <span>รายการสินค้า</span>
+                                    </div>
+
+                                    <div className="p-4 space-y-2.5">
+                                        {cart.map(item => (
+                                            <div key={item.id} className="flex items-center justify-between pb-2 border-b border-[#f0f5ea]">
+                                                <div className="flex items-center gap-3">
+                                                    <ItemIllustration type={item.svgType} imageUrl={item.imageUrl} size="w-10 h-10" />
+                                                    <span className="font-bold text-[#4a3b2c] text-sm">{item.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="bg-[#f7fbf2] border border-[#dce8ce] px-2.5 py-0.5 rounded-full text-xs font-bold text-[#556b2f]">
+                                                        × {item.qty}
+                                                    </span>
+                                                    <span className="font-bold text-[#4a3b2c] text-base min-w-[40px] text-right">
+                                                        ฿{item.price * item.qty}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div className="pt-1 flex items-center justify-between border-t border-dashed border-[#d7e6c5]">
+                                            <span className="font-bold text-[#4a3b2c] text-lg">ยอดรวม</span>
+                                            <span className="font-extrabold text-[#e55b69] text-2xl">฿{totalCartPrice}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Confirm Order Button */}
+                                <button
+                                    onClick={handleConfirmOrder}
+                                    className="w-full btn-pink-3d py-3.5 text-xl font-bold flex items-center justify-center gap-2.5"
+                                >
+                                    <span className="w-6 h-6 rounded-full bg-white text-[#e55b69] flex items-center justify-center text-sm font-black">✓</span>
+                                    <span>ยืนยันออเดอร์</span>
+                                </button>
+                            </div>
+
+                            <HayDayFooterFence />
+                        </div>
+                    )}
+
+                    {/* ==========================================
+                        SCREEN 4: ORDER SUCCESS (Minimalist Hay Day Pastel)
+                       ========================================== */}
+                    {screen === 'success' && activeOrder && (
+                        <div className="flex flex-col flex-1">
+                            {/* Top Cute Mascot Holding Clipboard */}
+                            <div className="content-container max-w-2xl pt-3 px-4 text-center relative">
+                                <div className="inline-block bg-white/95 border border-[#e2ecd5] px-5 py-1 rounded-full shadow-sm mb-1">
+                                    <span className="title-stroke text-lg font-extrabold">🌾 {branding.storeName} 🌾</span>
+                                </div>
+
+                                {/* Centered Sheep with Clipboard */}
+                                <div className="flex justify-center my-1">
+                                    <svg viewBox="0 0 180 125" className="w-36 h-24 sheep-mascot">
+                                        <path d="M25,65 C20,58 12,62 17,69 L25,76 L33,69 C38,62 30,58 25,65 Z" fill="#f47482"/>
+                                        <path d="M155,45 C150,38 142,42 147,49 L155,56 L163,49 C168,42 160,38 155,45 Z" fill="#f47482"/>
+                                        <circle cx="90" cy="68" r="38" fill="#ffffff" stroke="#c8a888" strokeWidth="2"/>
+                                        <circle cx="64" cy="52" r="22" fill="#ffffff" stroke="#c8a888" strokeWidth="2"/>
+                                        <circle cx="116" cy="52" r="22" fill="#ffffff" stroke="#c8a888" strokeWidth="2"/>
+                                        <ellipse cx="90" cy="62" rx="26" ry="22" fill="#ffeedd" stroke="#b58d6b" strokeWidth="2"/>
+                                        <circle cx="80" cy="60" r="3.2" fill="#4a3525"/>
+                                        <circle cx="100" cy="60" r="3.2" fill="#4a3525"/>
+                                        <path d="M85,66 Q90,71 95,66" fill="none" stroke="#7a4b2a" strokeWidth="2" strokeLinecap="round"/>
+                                        <g transform="translate(110, 32) rotate(15)">
+                                            <polygon points="-14,-8 0,0 -14,8" fill="#f57c87" stroke="#b8424e" strokeWidth="1.8"/>
+                                            <polygon points="14,-8 0,0 14,8" fill="#f57c87" stroke="#b8424e" strokeWidth="1.8"/>
+                                            <circle cx="0" cy="0" r="4" fill="#ffa8b0" stroke="#b8424e" strokeWidth="1.8"/>
+                                        </g>
+                                        <g transform="translate(96, 66) rotate(12)">
+                                            <rect x="0" y="0" width="32" height="42" rx="5" fill="#90d45c" stroke="#538d27" strokeWidth="2"/>
+                                            <rect x="9" y="-4" width="14" height="7" rx="2" fill="#f7d388" stroke="#b58124" strokeWidth="1.5"/>
+                                            <polyline points="8,22 14,28 24,15" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </g>
+                                    </svg>
+                                </div>
+
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-[#68b43c] border border-white shadow-sm flex items-center justify-center text-white text-lg font-bold">
+                                        ✓
+                                    </div>
+                                    <h1 className="text-2xl font-extrabold text-[#4a3b2c]">สั่งซื้อสำเร็จ!</h1>
+                                </div>
+                            </div>
+
+                            <div className="content-container max-w-2xl px-4 space-y-3 flex-1 pb-8">
+                                {/* Dashed Order Code Box (Copy button removed as requested since it is included in the formatted copy card below) */}
+                                <div className="card-pastel p-4 text-center relative">
+                                    <div className="border border-dashed border-[#c8deb0] rounded-2xl p-3.5">
+                                        <div className="text-[#556b2f] font-bold text-sm">โค้ดคำสั่งซื้อ (ย่อจาก {branding.storeName})</div>
+                                        <div className="text-4xl font-black text-[#4b7c22] tracking-wider mt-1">
+                                            {activeOrder.code}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Formatted Message for Seller Card */}
+                                <div className="card-pastel p-4 space-y-2.5">
+                                    <div className="bg-[#f3f9eb] px-3 py-1 rounded-full inline-flex items-center gap-1.5 text-[#4b6b28] font-bold text-xs">
+                                        <span>🏷️ ฟอร์มสรุปรายการออเดอร์สำหรับส่งให้ร้าน</span>
+                                    </div>
+                                    <div className="bg-[#fafdf7] border border-[#e2ecd5] rounded-2xl px-4 py-3 font-medium text-[#4a3b2c] text-xs sm:text-sm whitespace-pre-line leading-relaxed">
+                                        {formatOrderCopyText(activeOrder)}
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
+                                        <button
+                                            onClick={() => copyText(formatOrderCopyText(activeOrder), 'ฟอร์มรายการออเดอร์')}
+                                            className="w-full sm:w-auto btn-pink-3d px-7 py-2.5 text-sm font-bold inline-flex items-center justify-center gap-2"
+                                        >
+                                            <span>📋 คัดลอกออเดอร์ส่งให้ร้าน</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Navigation Buttons */}
+                                <div className="space-y-2 pt-1">
+                                    <button
+                                        onClick={() => setScreen('details')}
+                                        className="w-full btn-pink-3d py-3 text-lg font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <span>📄 ดูรายละเอียดคำสั่งซื้อ</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setScreen('store')}
+                                        className="w-full card-pastel py-2.5 text-base font-bold text-[#556b2f] flex items-center justify-center gap-2 active:scale-98"
+                                    >
+                                        <span>🏠 กลับหน้าร้าน</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <HayDayFooterFence />
+                        </div>
+                    )}
+
+                    {/* ==========================================
+                        SCREEN 5: ORDER DETAILS & STATUS (Small Rounded Square Item Cards, No Red-Circled Stepper Box)
+                       ========================================== */}
+                    {screen === 'details' && activeOrder && (() => {
+                        const summary = getOrderFulfillmentSummary(activeOrder.items);
+                        return (
+                            <div className="flex flex-col flex-1">
+                                <div className="content-container max-w-2xl">
+                                    <HayDayPastelHeader mode="sub" storeName={branding.storeName} bannerUrl={branding.bannerUrl} />
+                                </div>
+
+                                <div className="content-container max-w-2xl px-4 space-y-3 flex-1 pb-8">
+                                    {/* Top Bar */}
+                                    <div className="nav-pill px-3 py-2 flex items-center justify-between">
+                                        <button
+                                            onClick={() => setScreen('success')}
+                                            className="w-8 h-8 rounded-full bg-[#68b43c] text-white flex items-center justify-center font-bold text-base shadow-sm"
+                                        >
+                                            ❮
+                                        </button>
+                                        <h2 className="text-[#4a3b2c] font-extrabold text-lg">รายละเอียดคำสั่งซื้อ</h2>
+                                        <div className="w-8"></div>
+                                    </div>
+
+                                    {/* Main Details Container Card */}
+                                    <div className="card-pastel p-4 space-y-3.5">
+                                        {/* Code Pill & Delete Order Button */}
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="bg-[#eef8e3] px-3.5 py-1 rounded-full text-[#4b7c22] font-extrabold text-lg">
+                                                โค้ด {activeOrder.code}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                                                    {activeOrder.isDemoSample ? 'ข้อมูลตัวอย่าง (Demo)' : 'ออเดอร์ทดสอบของคุณ'}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleDeleteOrder(activeOrder.code)}
+                                                    className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 active:scale-95 transition"
+                                                    title="ลบออเดอร์นี้"
+                                                >
+                                                    🗑️ ลบออเดอร์
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Tag Box */}
+                                        <div className="bg-[#fafdf7] border border-[#e2ecd5] rounded-2xl px-4 py-2 flex items-center justify-between">
+                                            <div className="flex items-center gap-2 font-bold text-[#4a3b2c] text-sm">
+                                                <span className="text-[#68b43c]">🏷️</span>
+                                                <span>แท็กรับของ {activeOrder.tag}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => copyText(activeOrder.tag, 'แท็กรับของ')}
+                                                className="text-[#7a6b52] hover:text-[#4b7c22] font-bold text-base"
+                                            >
+                                                📋
+                                            </button>
+                                        </div>
+
+                                        {/* Small Rounded Square Product Cards with Quantity Badge in Corner & Color-coded Status */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="font-bold text-[#556b2f] text-xs">
+                                                    รายการสินค้า ({activeOrder.items.length} รายการ)
+                                                </h3>
+                                                <div className="flex items-center gap-2 text-[10px] font-bold">
+                                                    <span className="flex items-center gap-1 text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>ส่งแล้ว</span>
+                                                    <span className="flex items-center gap-1 text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-400"></span>รอรับของ</span>
+                                                    <span className="flex items-center gap-1 text-rose-700"><span className="w-2 h-2 rounded-full bg-rose-500"></span>ของหมด</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                                                {activeOrder.items.map(item => {
+                                                    const st = item.itemStatus || 'pending';
+                                                    const cardTone =
+                                                        st === 'sent'
+                                                            ? 'bg-emerald-50 border-emerald-400'
+                                                            : st === 'waiting'
+                                                            ? 'bg-amber-50 border-amber-400'
+                                                            : st === 'out'
+                                                            ? 'bg-rose-50 border-rose-400'
+                                                            : 'bg-[#f8fcf3] border-[#e3eed6]';
+                                                    const statusBadge =
+                                                        st === 'sent'
+                                                            ? { text: 'ส่งแล้ว', cls: 'bg-emerald-500 text-white' }
+                                                            : st === 'waiting'
+                                                            ? { text: 'รอรับของ', cls: 'bg-amber-400 text-amber-950' }
+                                                            : st === 'out'
+                                                            ? { text: 'ของหมด', cls: 'bg-rose-500 text-white' }
+                                                            : { text: 'รอจัดส่ง', cls: 'bg-slate-200 text-slate-700' };
+
+                                                    return (
+                                                        <div key={item.id} className={`relative rounded-2xl border p-2 flex flex-col items-center text-center transition-all ${cardTone}`}>
+                                                            {/* Quantity Badge in Top-Right Corner */}
+                                                            <div className="absolute -top-1.5 -right-1.5 bg-[#4a3b2c] text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm border border-white z-10">
+                                                                ×{item.qty}
+                                                            </div>
+
+                                                            {/* 1:1 Product Image */}
+                                                            <div className="w-14 h-14 aspect-square flex items-center justify-center p-1">
+                                                                <ItemIllustration type={item.svgType} imageUrl={item.imageUrl} size="w-full h-full object-contain" />
+                                                            </div>
+
+                                                            <div className="font-bold text-[#4a3b2c] text-[11px] leading-tight line-clamp-1 mt-0.5">
+                                                                {item.name}
+                                                            </div>
+                                                            <span className={`mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${statusBadge.cls}`}>
+                                                                {statusBadge.text}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Fulfillment Status Summary Box */}
+                                        <div className="bg-[#fafdf7] border border-[#e2ecd5] rounded-2xl p-3 space-y-1.5 text-xs">
+                                            <div className="font-bold text-[#4a3b2c] mb-1">📊 สรุปสถานะการจัดส่ง</div>
+                                            <div className="flex items-start justify-between gap-2 text-emerald-700 font-semibold">
+                                                <span>🟢 ส่งแล้ว: <strong>{summary.sentQty} ชิ้น</strong></span>
+                                                <span className="text-right text-[11px]">{summary.sentList.length > 0 ? summary.sentList.join(', ') : '-'}</span>
+                                            </div>
+                                            <div className="flex items-start justify-between gap-2 text-amber-700 font-semibold">
+                                                <span>🟡 รอลูกค้ารับของ: <strong>{summary.waitingQty} ชิ้น</strong></span>
+                                                <span className="text-right text-[11px]">{summary.waitingList.length > 0 ? summary.waitingList.join(', ') : '-'}</span>
+                                            </div>
+                                            <div className="flex items-start justify-between gap-2 text-rose-700 font-semibold">
+                                                <span>🔴 ของหมด: <strong>{summary.outQty} ชิ้น</strong></span>
+                                                <span className="text-right text-[11px]">{summary.outList.length > 0 ? summary.outList.join(', ') : '-'}</span>
+                                            </div>
+                                            {summary.pendingQty > 0 && (
+                                                <div className="flex items-center justify-between text-slate-500 font-medium pt-0.5 border-t border-[#eef4e6]">
+                                                    <span>⚪ รอดำเนินการ:</span>
+                                                    <span>{summary.pendingQty} ชิ้น</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Summary Box */}
+                                        <div className="bg-[#fafdf7] border border-[#e2ecd5] rounded-2xl overflow-hidden">
+                                            <div className="px-4 py-2 flex items-center justify-between border-b border-[#e2ecd5]">
+                                                <span className="font-semibold text-[#7a6b52] text-xs flex items-center gap-1.5">
+                                                    🧺 สินค้าทั้งหมด
+                                                </span>
+                                                <span className="font-bold text-[#4a3b2c] text-sm">{activeOrder.totalQty} ชิ้น</span>
+                                            </div>
+                                            <div className="px-4 py-2 bg-[#f3f9eb] flex items-center justify-between">
+                                                <span className="font-bold text-[#4a3b2c] text-base">ยอดรวม</span>
+                                                <span className="font-extrabold text-[#e55b69] text-xl">฿{activeOrder.totalPrice}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Manage Order (Go to Admin Backoffice) */}
+                                        <button
+                                            onClick={() => {
+                                                setAdminTab('orders');
+                                                setScreen('admin');
+                                            }}
+                                            className="w-full btn-pink-3d py-3 text-lg font-bold flex items-center justify-center gap-2"
+                                        >
+                                            <span>⚙️ จัดการคำสั่งซื้อ</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <HayDayFooterFence />
+                            </div>
+                        );
+                    })()}
+
+                    {/* ==========================================
+                        SCREEN 6: ADMIN BACKOFFICE (4 Organized Tabs: Orders Tap-to-Cycle, Products, Categories, Branding/PNGs)
+                       ========================================== */}
+                    {screen === 'admin' && (
+                        <div className="flex flex-col flex-1">
+                            <div className="content-container max-w-3xl">
+                                <HayDayPastelHeader mode="sub" storeName={branding.storeName} bannerUrl={branding.bannerUrl} />
+                            </div>
+
+                            <div className="content-container max-w-3xl px-4 space-y-3 flex-1 pb-10">
+                                {/* Top Nav */}
+                                <div className="nav-pill px-3 py-2 flex items-center justify-between">
+                                    <button
+                                        onClick={() => setScreen('store')}
+                                        className="w-8 h-8 rounded-full bg-[#68b43c] text-white flex items-center justify-center font-bold text-base shadow-sm"
+                                    >
+                                        ❮
+                                    </button>
+                                    <h2 className="text-[#4a3b2c] font-extrabold text-base md:text-lg">⚙️ ระบบหลังบ้าน (Admin Demo)</h2>
+                                    <div className="w-8"></div>
+                                </div>
+
+                                {/* Demo Disclaimer */}
+                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-2.5 text-[11px] text-amber-900">
+                                    <strong>📌 โหมดทดลองใช้งาน (Demo):</strong> ข้อมูลทั้งหมดทำงานในหน่วยความจำชั่วคราวของหน้าเว็บ (ยังไม่ได้เชื่อมฐานข้อมูลจริง) แยกข้อมูลตัวอย่างออกจากออเดอร์ใหม่ชัดเจน
+                                </div>
+
+                                {/* 4 Organized Backoffice Tabs */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {[
+                                        { id: 'orders', label: '📦 ออเดอร์ลูกค้า' },
+                                        { id: 'products', label: '🌾 จัดการสินค้า' },
+                                        { id: 'categories', label: '🗂️ หมวดหมู่' },
+                                        { id: 'branding', label: '🎨 โลโก้ & รูป PNG' },
+                                    ].map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setAdminTab(t.id)}
+                                            className={`py-2 px-3 rounded-2xl text-xs font-bold border transition-all ${
+                                                adminTab === t.id
+                                                    ? 'bg-[#68b43c] text-white border-[#86cf58] shadow-sm'
+                                                    : 'bg-white text-[#556b2f] border-[#dce8ce] hover:bg-[#f7fbf2]'
+                                            }`}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* TAB 1: CUSTOMER ORDERS (Tap product card: 1x Green Sent, 2x Yellow Waiting, 3x Red Out of Stock) */}
+                                {adminTab === 'orders' && (
+                                    <div className="space-y-3">
+                                        {orders.length === 0 ? (
+                                            <div className="card-pastel p-8 text-center text-xs font-bold text-[#7a6b52]">
+                                                ไม่มีรายการออเดอร์ในขณะนี้
+                                            </div>
+                                        ) : orders.map(order => {
+                                            const summary = getOrderFulfillmentSummary(order.items);
+                                            return (
+                                                <div key={order.code} className="card-pastel p-4 space-y-3">
+                                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-black text-lg text-[#4a3b2c]">{order.code}</span>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${order.isDemoSample ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                                                                {order.isDemoSample ? 'ข้อมูลตัวอย่าง' : 'ออเดอร์ใหม่'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-bold bg-[#f4fae9] text-[#556b2f] px-2.5 py-1 rounded-full border border-[#dce8ce]">
+                                                                🏷️ {order.tag}
+                                                            </span>
+                                                            <span className="font-extrabold text-lg text-[#e55b69]">฿{order.totalPrice}</span>
+                                                            <button
+                                                                onClick={() => handleDeleteOrder(order.code)}
+                                                                className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 text-xs font-bold active:scale-95 transition"
+                                                                title="ลบออเดอร์นี้"
+                                                            >
+                                                                🗑️ ลบ
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Tappable Small Rounded Square Product Cards */}
+                                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                                                        {order.items.map(item => {
+                                                            const st = item.itemStatus || 'pending';
+                                                            const cardStyle =
+                                                                st === 'sent'
+                                                                    ? 'bg-emerald-100/90 border-emerald-500 ring-2 ring-emerald-300/60'
+                                                                    : st === 'waiting'
+                                                                    ? 'bg-amber-100/90 border-amber-400 ring-2 ring-amber-300/60'
+                                                                    : st === 'out'
+                                                                    ? 'bg-rose-100/90 border-rose-500 ring-2 ring-rose-300/60'
+                                                                    : 'bg-[#fafdf7] border-[#dce8ce] hover:border-[#86cf58]';
+
+                                                            const badgeInfo =
+                                                                st === 'sent'
+                                                                    ? { label: 'ส่งแล้ว', cls: 'bg-emerald-600 text-white' }
+                                                                    : st === 'waiting'
+                                                                    ? { label: 'รอรับของ', cls: 'bg-amber-400 text-amber-950' }
+                                                                    : st === 'out'
+                                                                    ? { label: 'ของหมด', cls: 'bg-rose-600 text-white' }
+                                                                    : { label: 'จิ้มเปลี่ยนสถานะ', cls: 'bg-slate-200 text-slate-700' };
+
+                                                            return (
+                                                                <button
+                                                                    key={item.id}
+                                                                    type="button"
+                                                                    onClick={() => cycleOrderItemStatus(order.code, item.id)}
+                                                                    className={`relative rounded-2xl border p-2 flex flex-col items-center text-center transition-all active:scale-95 cursor-pointer ${cardStyle}`}
+                                                                >
+                                                                    {/* Quantity in Top-Right Corner */}
+                                                                    <div className="absolute -top-1.5 -right-1.5 bg-[#4a3b2c] text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow border border-white z-10">
+                                                                        ×{item.qty}
+                                                                    </div>
+
+                                                                    <div className="w-14 h-14 aspect-square flex items-center justify-center p-1">
+                                                                        <ItemIllustration type={item.svgType} imageUrl={item.imageUrl} size="w-full h-full object-contain" />
+                                                                    </div>
+
+                                                                    <div className="font-bold text-[#4a3b2c] text-[11px] leading-tight line-clamp-1 mt-0.5">
+                                                                        {item.name}
+                                                                    </div>
+                                                                    <span className={`mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${badgeInfo.cls}`}>
+                                                                        {badgeInfo.label}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Detailed Itemized Summary Below Order */}
+                                                    <div className="bg-[#fafdf7] border border-[#e2ecd5] rounded-2xl p-3 space-y-1.5 text-xs">
+                                                        <div className="flex items-start justify-between gap-2 text-emerald-700 font-semibold">
+                                                            <span>🟢 ส่งแล้ว ({summary.sentQty} ชิ้น):</span>
+                                                            <span className="text-right">{summary.sentList.length > 0 ? summary.sentList.join(', ') : 'ยังไม่มี'}</span>
+                                                        </div>
+                                                        <div className="flex items-start justify-between gap-2 text-amber-700 font-semibold">
+                                                            <span>🟡 รอส่ง / รอลูกค้ารับ ({summary.waitingQty + summary.pendingQty} ชิ้น):</span>
+                                                            <span className="text-right">
+                                                                {[...summary.waitingList, ...order.items.filter(i => !i.itemStatus || i.itemStatus === 'pending').map(i => `${i.name} ×${i.qty}`)].join(', ') || 'ไม่มี'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-start justify-between gap-2 text-rose-700 font-semibold">
+                                                            <span>🔴 ของหมด ({summary.outQty} ชิ้น):</span>
+                                                            <span className="text-right">{summary.outList.length > 0 ? summary.outList.join(', ') : 'ไม่มี'}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            setActiveOrderCode(order.code);
+                                                            setScreen('details');
+                                                        }}
+                                                        className="w-full py-2 rounded-xl bg-[#eef8e3] text-[#4b7c22] font-bold text-xs hover:bg-[#e1f2ce]"
+                                                    >
+                                                        🔍 ดูหน้ามุมมองลูกค้าของออเดอร์นี้
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* TAB 2: MANAGE PRODUCTS */}
+                                {adminTab === 'products' && (
+                                    <div className="space-y-3">
+                                        <form onSubmit={handleSaveProduct} className="card-pastel p-4 space-y-2.5">
+                                            <h3 className="font-bold text-[#4a3b2c] text-sm">
+                                                {editingProdId ? '✏️ แก้ไขข้อมูลสินค้า' : '➕ เพิ่มสินค้าใหม่'}
+                                            </h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={newProdForm.name}
+                                                    onChange={e => setNewProdForm({ ...newProdForm, name: e.target.value })}
+                                                    placeholder="ชื่อสินค้า (เช่น ขวาน, เลื่อย)"
+                                                    className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={newProdForm.desc}
+                                                    onChange={e => setNewProdForm({ ...newProdForm, desc: e.target.value })}
+                                                    placeholder="คำอธิบายสั้นๆ"
+                                                    className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                                                />
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={newProdForm.level}
+                                                        onChange={e => setNewProdForm({ ...newProdForm, level: e.target.value })}
+                                                        placeholder="เลเวล"
+                                                        className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-2.5 py-2 text-xs font-bold outline-none"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={newProdForm.price}
+                                                        onChange={e => setNewProdForm({ ...newProdForm, price: e.target.value })}
+                                                        placeholder="ราคา (฿)"
+                                                        className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-2.5 py-2 text-xs font-bold outline-none"
+                                                    />
+                                                    <select
+                                                        value={newProdForm.category}
+                                                        onChange={e => setNewProdForm({ ...newProdForm, category: e.target.value })}
+                                                        className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-2 py-2 text-xs font-bold outline-none"
+                                                    >
+                                                        {categories.filter(c => c.id !== 'ทั้งหมด').map(c => (
+                                                            <option key={c.id} value={c.id}>{c.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <input
+                                                    type="url"
+                                                    value={newProdForm.imageUrl}
+                                                    onChange={e => setNewProdForm({ ...newProdForm, imageUrl: e.target.value })}
+                                                    placeholder="ลิงก์รูปสินค้า 1:1 (เว้นว่างเพื่อใช้รูปวาดเดิม)"
+                                                    className="bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button type="submit" className="btn-pink-3d px-5 py-2 text-xs font-bold">
+                                                    {editingProdId ? '💾 บันทึกการแก้ไข' : '➕ เพิ่มสินค้า'}
+                                                </button>
+                                                {editingProdId && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingProdId(null);
+                                                            setNewProdForm({ name: '', desc: '', level: 7, price: 5, category: 'โรงนา', svgType: 'plank', imageUrl: '' });
+                                                        }}
+                                                        className="px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold"
+                                                    >
+                                                        ยกเลิก
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </form>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            {products.map(p => (
+                                                <div key={p.id} className="card-pastel p-3 flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-12 h-12 aspect-square bg-[#f7fbf2] rounded-xl border border-[#e3eed6] flex items-center justify-center p-1">
+                                                            <ItemIllustration type={p.svgType} imageUrl={p.imageUrl} size="w-full h-full object-contain" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-[#4a3b2c] text-xs">{p.name} <span className="text-[#68b43c]">(เวล {p.level})</span></div>
+                                                            <div className="text-[11px] text-[#7a6b52]">{p.category} • <strong className="text-[#e55b69]">฿{p.price}</strong></div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingProdId(p.id);
+                                                                setNewProdForm({ name: p.name, desc: p.desc, level: p.level, price: p.price, category: p.category, svgType: p.svgType, imageUrl: p.imageUrl || '' });
+                                                            }}
+                                                            className="px-2.5 py-1 rounded-lg bg-[#eef8e3] text-[#4b7c22] text-[11px] font-bold"
+                                                        >
+                                                            แก้ไข
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteProduct(p.id)}
+                                                            className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 text-[11px] font-bold"
+                                                        >
+                                                            ลบ
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 3: MANAGE CATEGORIES */}
+                                {adminTab === 'categories' && (
+                                    <div className="card-pastel p-4 space-y-3">
+                                        <h3 className="font-bold text-[#4a3b2c] text-sm">🗂️ จัดการหมวดหมู่สินค้า</h3>
+                                        <form onSubmit={handleAddCategory} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newCatName}
+                                                onChange={e => setNewCatName(e.target.value)}
+                                                placeholder="ชื่อหมวดหมู่ใหม่ (เช่น อาหารสัตว์, แร่)"
+                                                className="flex-1 bg-[#fafdf7] border border-[#dce8ce] rounded-full px-4 py-2 text-xs font-medium outline-none"
+                                            />
+                                            <button type="submit" className="btn-pink-3d px-5 py-2 text-xs font-bold">
+                                                + เพิ่มหมวดหมู่
+                                            </button>
+                                        </form>
+
+                                        <div className="flex flex-wrap gap-2 pt-1">
+                                            {categories.map(c => (
+                                                <div key={c.id} className="bg-[#f7fbf2] border border-[#dce8ce] px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold text-[#4a3b2c]">
+                                                    <span>{c.label}</span>
+                                                    {c.id !== 'ทั้งหมด' && (
+                                                        <button
+                                                            onClick={() => handleDeleteCategory(c.id)}
+                                                            className="text-rose-500 hover:text-rose-700 font-extrabold"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 4: BRANDING, LOGO, BANNER & PNG ASSETS */}
+                                {adminTab === 'branding' && (
+                                    <div className="card-pastel p-4 space-y-3">
+                                        <h3 className="font-bold text-[#4a3b2c] text-sm">🎨 ตั้งค่าโลโก้ แบนเนอร์ และรูป PNG</h3>
+                                        <div className="space-y-2.5 text-xs">
+                                            <div>
+                                                <label className="block font-bold text-[#556b2f] mb-1">ชื่อร้านค้า</label>
+                                                <input
+                                                    type="text"
+                                                    value={branding.storeName}
+                                                    onChange={e => setBranding({ ...branding, storeName: e.target.value })}
+                                                    className="w-full bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 font-bold text-[#4a3b2c] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-bold text-[#556b2f] mb-1">ลิงก์รูปโลโก้ร้าน (แถบบนซ้าย)</label>
+                                                <input
+                                                    type="url"
+                                                    value={branding.logoUrl}
+                                                    onChange={e => setBranding({ ...branding, logoUrl: e.target.value })}
+                                                    className="w-full bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-[#4a3b2c] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-bold text-[#556b2f] mb-1">ลิงก์รูปปุ่มตะกร้า PNG ลอย (ฝั่งขวา)</label>
+                                                <input
+                                                    type="url"
+                                                    value={branding.cartPngUrl}
+                                                    onChange={e => setBranding({ ...branding, cartPngUrl: e.target.value })}
+                                                    className="w-full bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-[#4a3b2c] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-bold text-[#556b2f] mb-1">ลิงก์รูปแผ่นเสียงเพลง PNG หมุน (แถบบนขวา)</label>
+                                                <input
+                                                    type="url"
+                                                    value={branding.vinylPngUrl}
+                                                    onChange={e => setBranding({ ...branding, vinylPngUrl: e.target.value })}
+                                                    className="w-full bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-[#4a3b2c] outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-bold text-[#556b2f] mb-1">ลิงก์รูปแบนเนอร์หัวเว็บ (เว้นว่างเพื่อใช้ฉากฟาร์ม Hay Day พาสเทล)</label>
+                                                <input
+                                                    type="url"
+                                                    value={branding.bannerUrl}
+                                                    onChange={e => setBranding({ ...branding, bannerUrl: e.target.value })}
+                                                    placeholder="https://..."
+                                                    className="w-full bg-[#fafdf7] border border-[#dce8ce] rounded-xl px-3 py-2 text-[#4a3b2c] outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => showToast('อัปเดตการตั้งค่าโลโก้และแบนเนอร์เรียบร้อย')}
+                                            className="btn-pink-3d px-6 py-2 text-xs font-bold"
+                                        >
+                                            ✅ บันทึกการแสดงผล
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
