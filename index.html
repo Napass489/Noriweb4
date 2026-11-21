@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>โนริเฮเดย์ — ร้านค้าไอเทมฟาร์ม (Demo)</title>
 
   <!-- Google Fonts: Mali (น่ารักมินิมอลสำหรับหัวข้อ) & Anuphan (อ่านง่าย คมชัดสำหรับเนื้อหา/ตัวเลข) -->
@@ -103,6 +103,18 @@
 
   <!-- Custom Styles สำหรับลูกเล่นโน้ตดนตรีฟุ้งออกจากแผ่นเสียง และซ่อนสโครลบาร์แนวนอน -->
   <style>
+    html, body { touch-action: manipulation; }
+    #confirmItemList {
+      max-height: min(20rem, 38vh);
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+    #orderCopyPreview { min-width: 0; overflow-wrap: anywhere; }
+    #productGrid [data-cart-controls][hidden] { display: none; }
+    @media (max-width: 1024px), (any-pointer: coarse) {
+      input, select, textarea, [contenteditable="true"] { font-size: 16px !important; }
+    }
+
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -148,8 +160,8 @@
       <div class="relative shrink-0">
         <button
           type="button"
-          onclick="navigateTo('home')"
-          title="กลับหน้าแรกร้านโนริเฮเดย์"
+          onclick="openAdminView()"
+          title="เข้าหลังบ้าน" aria-label="เข้าหลังบ้าน"
           class="block w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-lilac-200/90 bg-white shadow-sm hover:scale-105 active:scale-95 transition-transform focus:outline-none focus:ring-2 focus:ring-lilac-400"
         >
           <img
@@ -434,7 +446,7 @@
           </div>
 
           <!-- รายการสินค้าที่จะสั่ง -->
-          <ul id="confirmItemList" class="space-y-2.5 text-sm text-plum-800">
+          <ul id="confirmItemList" tabindex="0" aria-label="รายการสินค้าก่อนยืนยัน" class="space-y-2.5 text-sm text-plum-800">
             <!-- เรนเดอร์ด้วย JavaScript -->
           </ul>
         </div>
@@ -606,7 +618,7 @@
           <h3 class="font-cute text-base sm:text-lg font-bold text-plum-900">รายการสินค้า</h3>
           <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            อัปเดตเรียลไทม์
+            <span id="orderViewSyncLabel">อัปเดตในเครื่องนี้</span>
           </span>
         </div>
 
@@ -862,6 +874,10 @@
         </button>
       </div>
 
+      <label class="block mb-3 text-xs font-semibold text-plum-700">
+        ค้นหาสินค้า
+        <input id="adminProductSearch" type="search" oninput="renderAdminProducts()" placeholder="ค้นหาชื่อสินค้าหรือหมวดหมู่" class="mt-1 w-full px-3.5 py-2.5 rounded-xl bg-white border border-lilac-200 focus:outline-none focus:border-blush-400" />
+      </label>
       <div id="adminProductList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         <!-- เรนเดอร์รายการสินค้าหลังบ้าน -->
       </div>
@@ -933,7 +949,10 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-plum-700 mb-1">หมวดหมู่ *</label>
-            <input id="prodCategoryInput" type="text" required placeholder="เช่น อัปเกรดยุ้ง" class="w-full px-3.5 py-2.5 rounded-xl bg-lilac-50/70 border border-lilac-200 focus:outline-none focus:border-blush-400" />
+            <select id="prodCategorySelect" aria-label="เลือกหมวดหมู่ที่มีอยู่" onchange="if (this.value) document.getElementById('prodCategoryInput').value = this.value" class="w-full mb-2 px-3.5 py-2.5 rounded-xl bg-lilac-50/70 border border-lilac-200">
+              <option value="">เลือกหมวดหมู่ที่มีอยู่</option>
+            </select>
+            <input oninput="document.getElementById('prodCategorySelect').value = this.value.trim()" id="prodCategoryInput" type="text" required placeholder="หรือพิมพ์ชื่อหมวดหมู่เอง" class="w-full px-3.5 py-2.5 rounded-xl bg-lilac-50/70 border border-lilac-200 focus:outline-none focus:border-blush-400" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-plum-700 mb-1">เลเวล *</label>
@@ -1091,7 +1110,911 @@
       ORDERS: 'nori_hayday_orders_v1',
     };
 
-    const DEFAULT_PRODUCTS = [
+      const HAY_DAY_CATALOG = [
+          ["Axe", "ขวาน", "เครื่องมือ", 1],
+          ["Dynamite", "ระเบิดเล็ก", "เครื่องมือ", 1],
+          ["Saw", "เลื่อย", "เครื่องมือ", 1],
+          ["Shovel", "พลั่ว", "เครื่องมือ", 1],
+          ["TNT Barrel", "ถัง TNT", "เครื่องมือ", 1],
+          ["Pickaxe", "อีเต้อ", "เครื่องมือ", 34],
+          ["Apple", "แอปเปิล", "ผลผลิตต้นไม้และพุ่ม", 15],
+          ["Raspberry", "ราสเบอร์รี่", "ผลผลิตต้นไม้และพุ่ม", 19],
+          ["Cherry", "เชอร์รี่", "ผลผลิตต้นไม้และพุ่ม", 22],
+          ["Blackberry", "แบล็กเบอร์รี่", "ผลผลิตต้นไม้และพุ่ม", 26],
+          ["Blueberry", "บลูเบอร์รี่", "ผลผลิตต้นไม้และพุ่ม", 30],
+          ["Cacao", "โกโก้", "ผลผลิตต้นไม้และพุ่ม", 36],
+          ["Coffee Bean", "เมล็ดกาแฟ", "ผลผลิตต้นไม้และพุ่ม", 42],
+          ["Olive", "มะกอก", "ผลผลิตต้นไม้และพุ่ม", 57],
+          ["Lemon", "เลมอน", "ผลผลิตต้นไม้และพุ่ม", 66],
+          ["Orange", "ส้ม", "ผลผลิตต้นไม้และพุ่ม", 71],
+          ["Peach", "พีช", "ผลผลิตต้นไม้และพุ่ม", 76],
+          ["Banana", "กล้วย", "ผลผลิตต้นไม้และพุ่ม", 88],
+          ["Plum", "พลัม", "ผลผลิตต้นไม้และพุ่ม", 94],
+          ["Mango", "มะม่วง", "ผลผลิตต้นไม้และพุ่ม", 97],
+          ["Coconut", "มะพร้าว", "ผลผลิตต้นไม้และพุ่ม", 101],
+          ["Guava", "ฝรั่ง", "ผลผลิตต้นไม้และพุ่ม", 104],
+          ["Pomegranate", "ทับทิม", "ผลผลิตต้นไม้และพุ่ม", 107],
+          ["Egg", "ไข่ไก่", "ผลผลิตสัตว์และประมง", 1],
+          ["Milk", "นมวัว", "ผลผลิตสัตว์และประมง", 6],
+          ["Bacon", "เบคอน", "ผลผลิตสัตว์และประมง", 10],
+          ["Wool", "ขนแกะ", "ผลผลิตสัตว์และประมง", 16],
+          ["Lamb Chop", "เนื้อลูกแกะ", "ผลผลิตสัตว์และประมง", 25],
+          ["Fish Fillet", "เนื้อปลา", "ผลผลิตสัตว์และประมง", 27],
+          ["Goat Milk", "นมแพะ", "ผลผลิตสัตว์และประมง", 32],
+          ["Honeycomb", "รวงผึ้ง", "ผลผลิตสัตว์และประมง", 39],
+          ["Lobster Tail", "หางลอบสเตอร์", "ผลผลิตสัตว์และประมง", 44],
+          ["Duck Feather", "ขนเป็ด", "ผลผลิตสัตว์และประมง", 50],
+          ["Peanuts", "ถั่วลิสง", "ผลผลิตสัตว์และประมง", 62],
+          ["Wheat", "ข้าวสาลี", "พืชแปลง", 1],
+          ["Corn", "ข้าวโพด", "พืชแปลง", 2],
+          ["Soyabean", "ถั่วเหลือง", "พืชแปลง", 5],
+          ["Sugarcane", "อ้อย", "พืชแปลง", 7],
+          ["Carrot", "แครอต", "พืชแปลง", 9],
+          ["Indigo", "คราม", "พืชแปลง", 13],
+          ["Pumpkin", "ฟักทอง", "พืชแปลง", 15],
+          ["Cotton", "ฝ้าย", "พืชแปลง", 18],
+          ["Black Bean", "ถั่วดำ", "พืชแปลง", 25],
+          ["Chili Pepper", "พริก", "พืชแปลง", 25],
+          ["Tomato", "มะเขือเทศ", "พืชแปลง", 30],
+          ["Strawberry", "สตรอว์เบอร์รี", "พืชแปลง", 34],
+          ["Potato", "มันฝรั่ง", "พืชแปลง", 35],
+          ["Chamomile", "คาโมมายล์", "พืชแปลง", 45],
+          ["Asparagus", "หน่อไม้ฝรั่ง", "พืชแปลง", 49],
+          ["Sesame", "งา", "พืชแปลง", 50],
+          ["Pineapple", "สับปะรด", "พืชแปลง", 52],
+          ["Lily", "ดอกลิลี", "พืชแปลง", 53],
+          ["Rice", "ข้าว", "พืชแปลง", 56],
+          ["Lettuce", "ผักกาด", "พืชแปลง", 58],
+          ["Garlic", "กระเทียม", "พืชแปลง", 60],
+          ["Sunflower", "ทานตะวัน", "พืชแปลง", 63],
+          ["Cabbage", "กะหล่ำปลี", "พืชแปลง", 65],
+          ["Onion", "หัวหอม", "พืชแปลง", 68],
+          ["Cucumber", "แตงกวา", "พืชแปลง", 70],
+          ["Beetroot", "บีทรูท", "พืชแปลง", 72],
+          ["Bell Pepper", "พริกหยวก", "พืชแปลง", 74],
+          ["Ginger", "ขิง", "พืชแปลง", 78],
+          ["Tea Leaf", "ใบชา", "พืชแปลง", 80],
+          ["Peony", "ดอกโบตั๋น", "พืชแปลง", 82],
+          ["Broccoli", "บรอกโคลี", "พืชแปลง", 83],
+          ["Grapes", "องุ่น", "พืชแปลง", 84],
+          ["Mint", "มินท์", "พืชแปลง", 85],
+          ["Passion Fruit", "เสาวรส", "พืชแปลง", 88],
+          ["Mushroom", "เห็ด", "พืชแปลง", 89],
+          ["Eggplant", "มะเขือยาว", "พืชแปลง", 90],
+          ["Watermelon", "แตงโม", "พืชแปลง", 92],
+          ["Chickpea", "ถั่วลูกไก่", "พืชแปลง", 95],
+          ["Oats", "ข้าวโอ๊ต", "พืชแปลง", 119],
+          ["Gold Ore", "Gold Ore", "แร่และโลหะ", 24],
+          ["Platinum Ore", "Platinum Ore", "แร่และโลหะ", 24],
+          ["Silver Bar", "Silver Bar", "แร่และโลหะ", 24],
+          ["Silver Ore", "Silver Ore", "แร่และโลหะ", 24],
+          ["Gold Bar", "Gold Bar", "แร่และโลหะ", 25],
+          ["Platinum Bar", "Platinum Bar", "แร่และโลหะ", 25],
+          ["Coal", "Coal", "แร่และโลหะ", 33],
+          ["Refined Coal", "Refined Coal", "แร่และโลหะ", 33],
+          ["Iron Bar", "Iron Bar", "แร่และโลหะ", 34],
+          ["Iron Ore", "Iron Ore", "แร่และโลหะ", 34],
+          ["Clay", "ดินเหนียว", "วัตถุดิบอื่น", 94],
+          ["Land Deed", "โฉนดที่ดิน", "ขยายที่", 22],
+          ["Mallet", "ค้อนไม้", "ขยายที่", 22],
+          ["Marker Stake", "หลักเขต", "ขยายที่", 22],
+          ["Map Piece", "ชิ้นส่วนแผนที่", "ขยายที่", 34],
+          ["Nail", "ตะปู", "ไซโล", 1],
+          ["Screw", "สกรู", "ไซโล", 1],
+          ["Wood Panel", "แผ่นไม้", "ไซโล", 1],
+          ["Brick", "อิฐ", "วัสดุอัปเมือง", 34],
+          ["Hammer", "ค้อนอัปเมือง", "วัสดุอัปเมือง", 34],
+          ["Hand Drill", "สว่านมือ", "วัสดุอัปเมือง", 34],
+          ["Paint Bucket", "ถังสี", "วัสดุอัปเมือง", 34],
+          ["Stone Block", "บล็อกหิน", "วัสดุอัปเมือง", 34],
+          ["Tar Bucket", "ถังน้ำมันดิน", "วัสดุอัปเมือง", 34],
+          ["Bolt", "สลักเกลียว", "โรงนา", 1],
+          ["Duct Tape", "เทปกาว", "โรงนา", 1],
+          ["Plank", "ไม้กระดาน", "โรงนา", 1],
+          ["Sweater", "Sweater", "สินค้าแปรรูปนอกกลุ่มอาหาร", 17],
+          ["Cotton Fabric", "ผ้าฝ้าย", "สินค้าแปรรูปนอกกลุ่มอาหาร", 18],
+          ["Blue Woolly Hat", "Blue Woolly Hat", "สินค้าแปรรูปนอกกลุ่มอาหาร", 19],
+          ["Cotton Shirt", "Cotton Shirt", "สินค้าแปรรูปนอกกลุ่มอาหาร", 19],
+          ["Blue Sweater", "Blue Sweater", "สินค้าแปรรูปนอกกลุ่มอาหาร", 20],
+          ["Wooly Chaps", "Wooly Chaps", "สินค้าแปรรูปนอกกลุ่มอาหาร", 21],
+          ["Violet Dress", "Violet Dress", "สินค้าแปรรูปนอกกลุ่มอาหาร", 25],
+          ["Bracelet", "Bracelet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 38],
+          ["Necklace", "Necklace", "สินค้าแปรรูปนอกกลุ่มอาหาร", 39],
+          ["Diamond Ring", "Diamond Ring", "สินค้าแปรรูปนอกกลุ่มอาหาร", 40],
+          ["Iron Bracelet", "Iron Bracelet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 41],
+          ["Soothing Pad", "Soothing Pad", "สินค้าแปรรูปนอกกลุ่มอาหาร", 45],
+          ["Beeswax", "ขี้ผึ้ง", "สินค้าแปรรูปนอกกลุ่มอาหาร", 48],
+          ["Red Scarf", "Red Scarf", "สินค้าแปรรูปนอกกลุ่มอาหาร", 48],
+          ["Strawberry Candle", "Strawberry Candle", "สินค้าแปรรูปนอกกลุ่มอาหาร", 48],
+          ["Rustic Bouquet", "Rustic Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 49],
+          ["Pillow", "Pillow", "สินค้าแปรรูปนอกกลุ่มอาหาร", 51],
+          ["Raspberry Candle", "Raspberry Candle", "สินค้าแปรรูปนอกกลุ่มอาหาร", 52],
+          ["Blanket", "Blanket", "สินค้าแปรรูปนอกกลุ่มอาหาร", 59],
+          ["Bright Bouquet", "Bright Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 65],
+          ["Lemon Essential Oil", "Lemon Essential Oil", "สินค้าแปรรูปนอกกลุ่มอาหาร", 68],
+          ["Cloche Hat", "Cloche Hat", "สินค้าแปรรูปนอกกลุ่มอาหาร", 70],
+          ["Flower Shawl", "Flower Shawl", "สินค้าแปรรูปนอกกลุ่มอาหาร", 71],
+          ["Lemon Candle", "Lemon Candle", "สินค้าแปรรูปนอกกลุ่มอาหาร", 72],
+          ["Top Hat", "Top Hat", "สินค้าแปรรูปนอกกลุ่มอาหาร", 72],
+          ["Gracious Bouquet", "Gracious Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 73],
+          ["Chamomile Essential Oil", "Chamomile Essential Oil", "สินค้าแปรรูปนอกกลุ่มอาหาร", 74],
+          ["Sun Hat", "Sun Hat", "สินค้าแปรรูปนอกกลุ่มอาหาร", 74],
+          ["Ginger Essential Oil", "Ginger Essential Oil", "สินค้าแปรรูปนอกกลุ่มอาหาร", 80],
+          ["Colorful Candles", "Colorful Candles", "สินค้าแปรรูปนอกกลุ่มอาหาร", 84],
+          ["Honey Soap", "Honey Soap", "สินค้าแปรรูปนอกกลุ่มอาหาร", 84],
+          ["Lemon Lotion", "Lemon Lotion", "สินค้าแปรรูปนอกกลุ่มอาหาร", 84],
+          ["Mint Essential Oil", "Mint Essential Oil", "สินค้าแปรรูปนอกกลุ่มอาหาร", 85],
+          ["Flower Crown", "Flower Crown", "สินค้าแปรรูปนอกกลุ่มอาหาร", 86],
+          ["Candy Bouquet", "Candy Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 90],
+          ["Birthday Bouquet", "Birthday Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 92],
+          ["Exfoliating Soap", "Exfoliating Soap", "สินค้าแปรรูปนอกกลุ่มอาหาร", 93],
+          ["Soft Bouquet", "Soft Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 93],
+          ["Tea Pot", "Tea Pot", "สินค้าแปรรูปนอกกลุ่มอาหาร", 94],
+          ["Floral Candle", "Floral Candle", "สินค้าแปรรูปนอกกลุ่มอาหาร", 95],
+          ["Potted Plant", "Potted Plant", "สินค้าแปรรูปนอกกลุ่มอาหาร", 96],
+          ["Flower Pendant", "Flower Pendant", "สินค้าแปรรูปนอกกลุ่มอาหาร", 98],
+          ["Clay Mug", "Clay Mug", "สินค้าแปรรูปนอกกลุ่มอาหาร", 99],
+          ["Honey Face Mask", "Honey Face Mask", "สินค้าแปรรูปนอกกลุ่มอาหาร", 99],
+          ["Veggie Bouquet", "Veggie Bouquet", "สินค้าแปรรูปนอกกลุ่มอาหาร", 106],
+          ["Fresh Diffuser", "Fresh Diffuser", "สินค้าแปรรูปนอกกลุ่มอาหาร", 110],
+          ["Calming Diffuser", "Calming Diffuser", "สินค้าแปรรูปนอกกลุ่มอาหาร", 116],
+          ["Rich Soap", "Rich Soap", "สินค้าแปรรูปนอกกลุ่มอาหาร", 121],
+          ["Bread", "ขนมปัง", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 2],
+          ["Cream", "ครีม", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 6],
+          ["Brown Sugar", "น้ำตาลทรายแดง", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 7],
+          ["Corn Bread", "ขนมปังข้าวโพด", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 7],
+          ["Popcorn", "ป๊อปคอร์น", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 8],
+          ["Butter", "เนย", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 9],
+          ["Pancake", "แพนเค้ก", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 9],
+          ["Cookie", "คุกกี้", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 10],
+          ["Bacon and Eggs", "Bacon and Eggs", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 11],
+          ["Cheese", "ชีส", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 12],
+          ["White Sugar", "น้ำตาลทรายขาว", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 13],
+          ["Carrot Pie", "Carrot Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 14],
+          ["Pumpkin Pie", "Pumpkin Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 15],
+          ["Buttered Popcorn", "Buttered Popcorn", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 16],
+          ["Bacon Pie", "Bacon Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 18],
+          ["Hamburger", "Hamburger", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 18],
+          ["Syrup", "น้ำเชื่อม", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 18],
+          ["Raspberry Muffin", "Raspberry Muffin", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 19],
+          ["Carrot Cake", "Carrot Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 21],
+          ["Cream Cake", "Cream Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 23],
+          ["Red Berry Cake", "Red Berry Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 23],
+          ["Cheesecake", "Cheesecake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 24],
+          ["Chili Popcorn", "Chili Popcorn", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 25],
+          ["Grilled Lamb Skewer", "Grilled Lamb Skewer", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 25],
+          ["Blackberry Muffin", "Blackberry Muffin", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 26],
+          ["Carrot Juice", "Carrot Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 26],
+          ["Fish Burger", "Fish Burger", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 27],
+          ["Apple Juice", "Apple Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 28],
+          ["Apple Pie", "Apple Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 28],
+          ["Fish Pie", "Fish Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 28],
+          ["Vanilla Ice Cream", "Vanilla Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 29],
+          ["Cherry Juice", "Cherry Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 30],
+          ["Roasted Tomatoes", "Roasted Tomatoes", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 30],
+          ["Berry Juice", "Berry Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 31],
+          ["Blueberry Cheesecake", "Blueberry Cheesecake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 31],
+          ["Tomato Juice", "Tomato Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 31],
+          ["Lamb Doner Wrap", "Lamb Doner Wrap", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 32],
+          ["Spicy Bean Doner", "Spicy Bean Doner", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 32],
+          ["Blueberry Muffin", "Blueberry Muffin", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 33],
+          ["Cherry Popsicle", "Cherry Popsicle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 33],
+          ["Goat Cheese", "ชีสนมแพะ", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 33],
+          ["Pizza", "Pizza", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 33],
+          ["Feta Pie", "Feta Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 34],
+          ["Strawberry Ice Cream", "Strawberry Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 34],
+          ["Apple Jam", "Apple Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 35],
+          ["Baked Potato", "Baked Potato", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 35],
+          ["Strawberry Cake", "Strawberry Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 35],
+          ["Casserole", "Casserole", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 36],
+          ["Chocolate Cake", "Chocolate Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 36],
+          ["Raspberry Jam", "Raspberry Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 36],
+          ["Blackberry Jam", "Blackberry Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 37],
+          ["Spicy Pizza", "Spicy Pizza", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 37],
+          ["Cherry Jam", "Cherry Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 38],
+          ["Potato Feta Cake", "Potato Feta Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 38],
+          ["Chocolate Ice Cream", "Chocolate Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 39],
+          ["Honey", "น้ำผึ้ง", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 39],
+          ["Potato Bread", "Potato Bread", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 39],
+          ["Shepherd's Pie", "Shepherd's Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 39],
+          ["Honey Popcorn", "Honey Popcorn", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 40],
+          ["Fish and Chips", "Fish and Chips", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 41],
+          ["Espresso", "Espresso", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 42],
+          ["Honey Apple Cake", "Honey Apple Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 42],
+          ["Caffe Latte", "Caffe Latte", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 43],
+          ["Chocolate Popcorn", "Chocolate Popcorn", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 44],
+          ["Caffe Mocha", "Caffe Mocha", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 45],
+          ["Frutti di Mare Pizza", "Frutti di Mare Pizza", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 45],
+          ["Lamb Soup", "Lamb Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 46],
+          ["Lobster Soup", "Lobster Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 46],
+          ["Raspberry Mocha", "Raspberry Mocha", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 46],
+          ["Hot Chocolate", "Hot Chocolate", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 47],
+          ["Tomato Soup", "Tomato Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 47],
+          ["Lobster Skewer", "Lobster Skewer", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 48],
+          ["Asparagus Quiche", "Asparagus Quiche", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 49],
+          ["Pumpkin Soup", "Pumpkin Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 49],
+          ["Sesame Ice Cream", "Sesame Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 50],
+          ["Strawberry Jam", "Strawberry Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 50],
+          ["Asparagus Soup", "Asparagus Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 51],
+          ["Caramel Apple", "Caramel Apple", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 51],
+          ["Pineapple Juice", "Pineapple Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 52],
+          ["Toffee", "Toffee", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 52],
+          ["Fish Soup", "Fish Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 53],
+          ["Bean Dip", "Bean Dip", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 54],
+          ["Chocolate", "Chocolate", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 54],
+          ["Fancy Cake", "Fancy Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 54],
+          ["Soy Sauce", "Soy Sauce", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 54],
+          ["Sushi Roll", "Sushi Roll", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 56],
+          ["Lollipop", "Lollipop", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 57],
+          ["Bean Salad", "Bean Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 58],
+          ["Feta Salad", "Feta Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 58],
+          ["Tower Doner Supreme", "Tower Doner Supreme", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 58],
+          ["Lobster Sushi", "Lobster Sushi", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 59],
+          ["Garlic Bread", "Garlic Bread", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 60],
+          ["Jelly Beans", "Jelly Beans", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 60],
+          ["Olive Oil", "Olive Oil", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 60],
+          ["Veggie Bagel", "Veggie Bagel", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 61],
+          ["BLT Salad", "BLT Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 62],
+          ["Caramel Latte", "Caramel Latte", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 62],
+          ["Mayonnaise", "Mayonnaise", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 62],
+          ["Egg Sushi", "Egg Sushi", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 63],
+          ["Honey Peanuts", "Honey Peanuts", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 63],
+          ["Berry Smoothie", "Berry Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 64],
+          ["Seafood Salad", "Seafood Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 64],
+          ["Snack Mix", "Snack Mix", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 64],
+          ["Bacon Toast", "Bacon Toast", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 65],
+          ["Cabbage Soup", "Cabbage Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 65],
+          ["Chocolate Pie", "Chocolate Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 65],
+          ["Pineapple Cake", "Pineapple Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 65],
+          ["Egg Sandwich", "Egg Sandwich", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 66],
+          ["Green Smoothie", "Green Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 66],
+          ["Lemon Curd", "Lemon Curd", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 66],
+          ["Olive Dip", "Olive Dip", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 66],
+          ["Fresh Pasta", "Fresh Pasta", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 67],
+          ["Grilled Asparagus", "Grilled Asparagus", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 67],
+          ["Lemon Pie", "Lemon Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 67],
+          ["Pasta Salad", "Pasta Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 67],
+          ["Grilled Onion", "Grilled Onion", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 68],
+          ["Lemon Cake", "Lemon Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 68],
+          ["Peanut Butter Milkshake", "Peanut Butter Milkshake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 68],
+          ["Fried Rice", "Fried Rice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 69],
+          ["Honey Toast", "Honey Toast", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 69],
+          ["Lamb Stir Fry", "Lamb Stir Fry", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 69],
+          ["Tomato Sauce", "Tomato Sauce", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 69],
+          ["Blueberry Chutney", "Blueberry Chutney", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 70],
+          ["Cucumber Smoothie", "Cucumber Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 70],
+          ["Yogurt Smoothie", "Yogurt Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 70],
+          ["Orange Juice", "Orange Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 71],
+          ["Peanut Butter and Jelly Sandwich", "Peanut Butter and Jelly Sandwich", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 71],
+          ["Gnocchi", "Gnocchi", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 72],
+          ["Onion Soup", "Onion Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 72],
+          ["Winter Veggies", "Winter Veggies", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 72],
+          ["Noodle Soup", "Noodle Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 73],
+          ["Rice Noodles", "Rice Noodles", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 73],
+          ["Marmalade", "Marmalade", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 74],
+          ["Veggie Lasagna", "Veggie Lasagna", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 74],
+          ["Veggie Platter", "Veggie Platter", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 74],
+          ["Coleslaw", "Coleslaw", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 75],
+          ["Cotton Candy", "Cotton Candy", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 75],
+          ["Hot Dog", "Hot Dog", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 75],
+          ["Beetroot Salad", "Beetroot Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 76],
+          ["Big Sushi Roll", "Big Sushi Roll", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 76],
+          ["Peach Tart", "Peach Tart", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 76],
+          ["Plain Donut", "Plain Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 76],
+          ["Tofu Dog", "Tofu Dog", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 76],
+          ["Colorful Omelet", "Colorful Omelet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 77],
+          ["Salsa", "Salsa", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 77],
+          ["Spicy Bean Taco", "Spicy Bean Taco", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 77],
+          ["Spring Omelet", "Spring Omelet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 77],
+          ["Taco", "Taco", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 77],
+          ["Affogato", "Affogato", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Corn Dog", "Corn Dog", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Orange Sorbet", "Orange Sorbet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Potato Soup", "Potato Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Sesame Brittle", "Sesame Brittle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Summer Rolls", "Summer Rolls", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 78],
+          ["Cheese Omelet", "Cheese Omelet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Cucumber Sandwich", "Cucumber Sandwich", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Fish Taco", "Fish Taco", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Lobster Pasta", "Lobster Pasta", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Peach Jam", "Peach Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Spicy Fish", "Spicy Fish", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Sprinkled Donut", "Sprinkled Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 79],
+          ["Green Tea", "Green Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 80],
+          ["Onion Dog", "Onion Dog", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 80],
+          ["Stuffed Peppers", "Stuffed Peppers", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 80],
+          ["Bell Pepper Soup", "Bell Pepper Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 81],
+          ["Chocolate Fondue", "Chocolate Fondue", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 81],
+          ["Milk Tea", "Milk Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 81],
+          ["Crunchy Donut", "Crunchy Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 82],
+          ["Fruit Salad", "Fruit Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 82],
+          ["Quesadilla", "Quesadilla", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 82],
+          ["Broccoli Pasta", "Broccoli Pasta", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 83],
+          ["Honey Tea", "Honey Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 83],
+          ["Pasta Carbonara", "Pasta Carbonara", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 83],
+          ["Peach Ice Cream", "Peach Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 83],
+          ["Grape Juice", "Grape Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 84],
+          ["Onion Melt", "Onion Melt", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 84],
+          ["Summer Salad", "Summer Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 84],
+          ["Grape Jam", "Grape Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 85],
+          ["Mint Ice Cream", "Mint Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 85],
+          ["Bacon Fondue", "Bacon Fondue", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 86],
+          ["Cream Donut", "Cream Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 86],
+          ["Gingerbread Cookie", "Gingerbread Cookie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 86],
+          ["Lemon Tea", "Lemon Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 86],
+          ["Peanut Noodles", "Peanut Noodles", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 86],
+          ["Bacon Fries", "Bacon Fries", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 87],
+          ["Broccoli Soup", "Broccoli Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 87],
+          ["Nachos", "Nachos", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 87],
+          ["Potato Omelet", "Potato Omelet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 87],
+          ["Spicy Pasta", "Spicy Pasta", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 87],
+          ["Apple Ginger Tea", "Apple Ginger Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 88],
+          ["Bacon Donut", "Bacon Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 88],
+          ["Iced Banana Latte", "Iced Banana Latte", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 88],
+          ["Mixed Smoothie", "Mixed Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 88],
+          ["Passion Fruit Juice", "Passion Fruit Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 88],
+          ["Fruit Cake", "Fruit Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 89],
+          ["Mushroom Salad", "Mushroom Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 89],
+          ["Orange Tea", "Orange Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 89],
+          ["Tofu Stir Fry", "Tofu Stir Fry", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 89],
+          ["Grilled Eggplant", "Grilled Eggplant", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 90],
+          ["Banana Bread", "Banana Bread", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 91],
+          ["Cheese Fondue", "Cheese Fondue", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 91],
+          ["Hand Pies", "Hand Pies", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 91],
+          ["Pickles", "Pickles", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 91],
+          ["Goat Cheese Toast", "Goat Cheese Toast", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 92],
+          ["Iced Tea", "Iced Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 92],
+          ["Passion Fruit Pie", "Passion Fruit Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 92],
+          ["Watermelon Juice", "Watermelon Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 92],
+          ["Black Sesame Smoothie", "Black Sesame Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 93],
+          ["Filled Donut", "Filled Donut", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 93],
+          ["Banana Pancakes", "Banana Pancakes", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 94],
+          ["Plum Jam", "Plum Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 94],
+          ["Canned Fish", "Canned Fish", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 95],
+          ["Chocolate Roll", "Chocolate Roll", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 95],
+          ["Hummus", "Hummus", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 95],
+          ["Banana Split", "Banana Split", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 96],
+          ["Fish Skewer", "Fish Skewer", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 96],
+          ["Passion Fruit Jam", "Passion Fruit Jam", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 96],
+          ["Mango Juice", "Mango Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 97],
+          ["Mint Tea", "Mint Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 97],
+          ["Mushroom Pot Pie", "Mushroom Pot Pie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 97],
+          ["Chili Poppers", "Chili Poppers", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 98],
+          ["Falafel", "Falafel", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 98],
+          ["Kimchi", "Kimchi", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 98],
+          ["Eggplant Parmesan", "Eggplant Parmesan", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 99],
+          ["Rich Fudge", "Rich Fudge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 99],
+          ["Chamomile Tea", "Chamomile Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 100],
+          ["Cocoa Smoothie", "Cocoa Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 100],
+          ["Fried Candy Bar", "Fried Candy Bar", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 100],
+          ["Tart Dressing", "Tart Dressing", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 100],
+          ["Tropical Fondue", "Tropical Fondue", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 100],
+          ["Macaroon", "Macaroon", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 101],
+          ["Mushroom Pasta", "Mushroom Pasta", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 101],
+          ["Coconut Ice Cream", "Coconut Ice Cream", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 102],
+          ["Dried Fruit", "Dried Fruit", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 102],
+          ["Mint Fudge", "Mint Fudge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 102],
+          ["Plum Smoothie", "Plum Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 102],
+          ["Plain Yogurt", "Plain Yogurt", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 103],
+          ["Samosa", "Samosa", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 103],
+          ["Chili Fudge", "Chili Fudge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 104],
+          ["Guava Compote", "Guava Compote", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 104],
+          ["Guava Juice", "Guava Juice", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 104],
+          ["Mushroom Soup", "Mushroom Soup", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 104],
+          ["Tropical Smoothie", "Tropical Smoothie", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 104],
+          ["Strawberry Yogurt", "Strawberry Yogurt", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 105],
+          ["Chickpea Stew", "Chickpea Stew", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 106],
+          ["Fruit Sorbet", "Fruit Sorbet", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 106],
+          ["Pomegranate Tea", "Pomegranate Tea", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 107],
+          ["Lemon Fudge", "Lemon Fudge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 108],
+          ["Pomegranate Cake", "Pomegranate Cake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 108],
+          ["Chili Stew", "Chili Stew", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 109],
+          ["Guava Cupcake", "Guava Cupcake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 109],
+          ["Hummus Wrap", "Hummus Wrap", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 109],
+          ["Plain Cupcake", "Plain Cupcake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 109],
+          ["Tropical Yogurt", "Tropical Yogurt", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 109],
+          ["Rice Ball", "Rice Ball", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 110],
+          ["Peanut Fudge", "Peanut Fudge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 111],
+          ["Tropical Cupcake", "Tropical Cupcake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 112],
+          ["Berry Waffle", "Berry Waffle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 114],
+          ["Cookie Cupcake", "Cookie Cupcake", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 114],
+          ["Plain Waffle", "Plain Waffle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 114],
+          ["Chocolate Waffle", "Chocolate Waffle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 117],
+          ["Orange Salad", "Orange Salad", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 117],
+          ["Blueberry Waffle", "Blueberry Waffle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 118],
+          ["Apple Porridge", "Apple Porridge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 119],
+          ["Breakfast Bowl", "Breakfast Bowl", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 119],
+          ["Breakfast Waffle", "Breakfast Waffle", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 119],
+          ["Pineapple Coconut Bars", "Pineapple Coconut Bars", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 120],
+          ["Sweet Porridge", "Sweet Porridge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 120],
+          ["Fresh Porridge", "Fresh Porridge", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 122],
+          ["Vanilla Milkshake", "มิลค์เชควานิลลา", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 124],
+          ["Mocha Milkshake", "มิลค์เชคมอคค่า", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 125],
+          ["Fruity Milkshake", "มิลค์เชคผลไม้", "อาหาร เครื่องดื่ม และวัตถุดิบแปรรูป", 126],
+          ["Chicken Feed", "อาหารไก่", "อาหารสัตว์", 3],
+          ["Cow Feed", "อาหารวัว", "อาหารสัตว์", 6],
+          ["Pig Feed", "อาหารหมู", "อาหารสัตว์", 10],
+          ["Sheep Feed", "อาหารแกะ", "อาหารสัตว์", 16],
+          ["Lamb Feed", "อาหารลูกแกะ", "อาหารสัตว์", 25],
+          ["Goat Feed", "อาหารแพะ", "อาหารสัตว์", 32],
+          ["Meat Bucket", "ถังเนื้อ", "อาหารสัตว์", 34],
+          ["Wheat Bundle", "มัดข้าวสาลี", "อาหารสัตว์", 34]
+      ];
+      // File names from the Hay Day Wiki product and crop galleries.
+      const CATALOG_IMAGE_PATHS = Object.freeze({
+          "Affogato": "f/fc/Affogato.png",
+          "Apple": "7/7d/Apple.png",
+          "Apple Ginger Tea": "e/e3/Apple_Ginger_Tea.png",
+          "Apple Jam": "6/6c/Apple_Jam.png",
+          "Apple Juice": "4/41/Apple_Juice.png",
+          "Apple Pie": "f/fb/Apple_Pie.png",
+          "Apple Porridge": "d/d3/Apple_Porridge.png",
+          "Asparagus": "4/45/Asparagus.png",
+          "Asparagus Quiche": "4/4b/Asparagus_Quiche.png",
+          "Asparagus Soup": "8/83/Asparagus_Soup.png",
+          "Axe": "f/fb/Axe.png",
+          "BLT Salad": "e/eb/BLT_Salad.png",
+          "Bacon": "f/f6/Bacon.png",
+          "Bacon Donut": "0/06/Bacon_Donut.png",
+          "Bacon Fondue": "d/d0/Bacon_Fondue.png",
+          "Bacon Fries": "8/80/Bacon_Fries.png",
+          "Bacon Pie": "b/b4/Bacon_Pie.png",
+          "Bacon Toast": "7/72/Bacon_Toast.png",
+          "Bacon and Eggs": "a/a6/Bacon_and_Eggs.png",
+          "Baked Potato": "1/11/Baked_Potato.png",
+          "Banana": "6/69/Banana.png",
+          "Banana Bread": "3/35/Banana_Bread.png",
+          "Banana Pancakes": "4/4f/Banana_Pancakes.png",
+          "Banana Split": "b/bd/Banana_Split.png",
+          "Bean Dip": "5/58/Bean_Dip.png",
+          "Bean Salad": "b/b4/Bean_Salad.png",
+          "Beeswax": "e/e4/Beeswax.png",
+          "Beetroot": "5/56/Beetroot.png",
+          "Beetroot Salad": "f/ff/Beetroot_Salad.png",
+          "Bell Pepper": "e/e2/Bell_Pepper.png",
+          "Bell Pepper Soup": "8/81/Bell_Pepper_Soup.png",
+          "Berry Juice": "3/3a/Berry_Juice.png",
+          "Berry Smoothie": "a/a8/Berry_Smoothie.png",
+          "Berry Waffle": "2/29/Berry_Waffles.png",
+          "Big Sushi Roll": "a/a9/Big_Sushi_Roll.png",
+          "Birthday Bouquet": "2/23/Birthday_Bouquet.png",
+          "Black Sesame Smoothie": "3/3c/Black_Sesame_Smoothie.png",
+          "Blackberry": "2/25/Blackberry.png",
+          "Blackberry Jam": "5/52/Blackberry_Jam.png",
+          "Blackberry Muffin": "c/c9/Blackberry_Muffin.png",
+          "Blanket": "3/3b/Blanket.png",
+          "Blue Sweater": "3/37/Blue_Sweater.png",
+          "Blue Woolly Hat": "0/03/Blue_Woolly_Hat.png",
+          "Blueberry Cheesecake": "9/9d/Blueberry_Cheesecake.png",
+          "Blueberry Chutney": "2/2e/Blueberry_Chutney.png",
+          "Blueberry Muffin": "3/31/Blueberry_Muffin.png",
+          "Blueberry Waffle": "b/b7/Blueberry_Waffles.png",
+          "Bolt": "8/8e/Bolt.png",
+          "Bracelet": "3/33/Bracelet.png",
+          "Bread": "e/e1/Bread.png",
+          "Breakfast Bowl": "2/2e/Breakfast_Bowl.png",
+          "Breakfast Waffle": "5/59/Breakfast_Waffles.png",
+          "Brick": "5/58/Brick.png",
+          "Bright Bouquet": "5/52/Bright_Bouquet.png",
+          "Broccoli": "f/f1/Broccoli.png",
+          "Broccoli Pasta": "a/a8/Broccoli_Pasta.png",
+          "Broccoli Soup": "b/b6/Broccoli_Soup.png",
+          "Brown Sugar": "0/02/Brown_Sugar.png",
+          "Butter": "f/f1/Butter.png",
+          "Buttered Popcorn": "8/88/Buttered_Popcorn.png",
+          "Cabbage": "c/cc/Cabbage.png",
+          "Cabbage Soup": "3/34/Cabbage_Soup.png",
+          "Cacao": "6/60/Cacao.png",
+          "Calming Diffuser": "d/d3/Calming_Diffuser.png",
+          "Candy Bouquet": "1/1b/Candy_Bouquet.png",
+          "Canned Fish": "8/81/Canned_Fish.png",
+          "Caramel Apple": "2/24/Caramel_Apple.png",
+          "Caramel Latte": "6/6a/Caramel_Latte.png",
+          "Carrot": "c/c3/Carrot.png",
+          "Carrot Cake": "d/dd/Carrot_Cake.png",
+          "Carrot Juice": "e/e0/Carrot_Juice.png",
+          "Carrot Pie": "0/0b/Carrot_Pie.png",
+          "Casserole": "b/b6/Casserole.png",
+          "Chamomile Essential Oil": "5/53/Chamomile_Essential_Oil.png",
+          "Chamomile Tea": "7/7e/Chamomile_Tea.png",
+          "Cheese": "a/a5/Cheese.png",
+          "Cheese Fondue": "3/3a/Cheese_Fondue.png",
+          "Cheese Omelet": "c/c2/Cheese_Omelet.png",
+          "Cheesecake": "2/2d/Cheesecake.png",
+          "Cherry": "2/20/Cherry.png",
+          "Cherry Jam": "5/53/Cherry_Jam.png",
+          "Cherry Juice": "a/ab/Cherry_Juice.png",
+          "Cherry Popsicle": "4/48/Cherry_Popsicle.png",
+          "Chicken Feed": "6/6a/Chicken_Feed.png",
+          "Chickpea": "0/02/Chickpea.png",
+          "Chickpea Stew": "a/a5/Chickpea_Stew.png",
+          "Chili Fudge": "a/a2/Chili_Fudge.png",
+          "Chili Pepper": "a/ab/Chili_Pepper.png",
+          "Chili Popcorn": "7/7c/Chili_Popcorn.png",
+          "Chili Poppers": "8/8f/Chili_Poppers.png",
+          "Chili Stew": "c/c6/Chili_Stew.png",
+          "Chocolate": "d/df/Chocolate.png",
+          "Chocolate Cake": "8/87/Chocolate_Cake.png",
+          "Chocolate Fondue": "c/ce/Chocolate_Fondue.png",
+          "Chocolate Ice Cream": "4/41/Chocolate_Ice_Cream.png",
+          "Chocolate Pie": "7/7c/Chocolate_Pie.png",
+          "Chocolate Popcorn": "0/09/Chocolate_Popcorn.png",
+          "Chocolate Roll": "a/a3/Chocolate_Roll.png",
+          "Chocolate Waffle": "4/4d/Chocolate_Waffles.png",
+          "Clay": "a/a2/Clay.png",
+          "Clay Mug": "f/f1/Clay_Mug.png",
+          "Cloche Hat": "1/1e/Cloche_Hat.png",
+          "Coal": "a/a7/Coal.png",
+          "Cocoa Smoothie": "c/c4/Cocoa_Smoothie.png",
+          "Coconut": "2/2f/Coconut.png",
+          "Coconut Ice Cream": "d/d9/Coconut_Ice_Cream.png",
+          "Coffee Bean": "3/33/Coffee_Bean.png",
+          "Coleslaw": "e/e1/Coleslaw.png",
+          "Colorful Candles": "1/19/Colorful_Candles.png",
+          "Colorful Omelet": "6/65/Colourful_Omelet.png",
+          "Cookie": "7/70/Cookie.png",
+          "Cookie Cupcake": "8/86/Cookie_Cupcake.png",
+          "Corn": "f/f8/Corn.png",
+          "Corn Bread": "1/1d/Corn_Bread.png",
+          "Corn Dog": "1/15/Corn_Dog.png",
+          "Cotton": "c/c3/Cotton.png",
+          "Cotton Candy": "6/67/Cotton_Candy.png",
+          "Cotton Fabric": "0/01/Cotton_Fabric.png",
+          "Cotton Shirt": "6/66/Cotton_Shirt.png",
+          "Cow Feed": "f/f6/Cow_Feed.png",
+          "Cream": "8/83/Cream.png",
+          "Cream Cake": "7/73/Cream_Cake.png",
+          "Cream Donut": "6/60/Cream_Donut.png",
+          "Crunchy Donut": "4/46/Crunchy_Donut.png",
+          "Cucumber": "5/59/Cucumber.png",
+          "Cucumber Sandwich": "b/b4/Cucumber_Sandwich.png",
+          "Cucumber Smoothie": "5/57/Cucumber_Smoothie.png",
+          "Diamond Ring": "a/a6/Diamond_Ring.png",
+          "Dried Fruit": "6/66/Dried_Fruit.png",
+          "Duck Feather": "f/f9/Duck_Feather.png",
+          "Duct Tape": "4/4e/Duct_Tape.png",
+          "Dynamite": "f/fc/Dynamite.png",
+          "Egg": "2/26/Egg.png",
+          "Egg Sandwich": "8/81/Egg_Sandwich.png",
+          "Egg Sushi": "9/9b/Egg_Sushi.png",
+          "Eggplant": "8/8f/Eggplant.png",
+          "Eggplant Parmesan": "7/73/Eggplant_Parmesan.png",
+          "Espresso": "a/ad/Espresso.png",
+          "Exfoliating Soap": "3/38/Exfoliating_Soap.png",
+          "Falafel": "5/5c/Falafel.png",
+          "Fancy Cake": "d/dd/Fancy_Cake.png",
+          "Feta Pie": "6/61/Feta_Pie.png",
+          "Feta Salad": "9/96/Feta_Salad.png",
+          "Filled Donut": "3/30/Filled_Donut.png",
+          "Fish Burger": "7/7e/Fish_Burger.png",
+          "Fish Fillet": "6/63/Fish_Fillet.png",
+          "Fish Pie": "e/ec/Fish_Pie.png",
+          "Fish Skewer": "8/80/Fish_Skewer.png",
+          "Fish Soup": "b/be/Fish_Soup.png",
+          "Fish Taco": "d/d5/Fish_Taco.png",
+          "Fish and Chips": "e/ea/Fish_and_Chips.png",
+          "Floral Candle": "c/c8/Floral_Candle.png",
+          "Flower Crown": "c/ce/Flower_Crown.png",
+          "Flower Pendant": "a/ae/Flower_Pendant.png",
+          "Flower Shawl": "6/66/Flower_Shawl.png",
+          "Fresh Diffuser": "2/2f/Fresh_Diffuser.png",
+          "Fresh Pasta": "9/93/Fresh_Pasta.png",
+          "Fresh Porridge": "0/09/Fresh_Porridge.png",
+          "Fried Candy Bar": "9/96/Fried_Candy_Bar.png",
+          "Fried Rice": "6/61/Fried_Rice.png",
+          "Fruit Cake": "4/47/Fruit_Cake.png",
+          "Fruit Salad": "9/9e/Fruit_Salad.png",
+          "Fruit Sorbet": "b/b9/Fruit_Sorbet.png",
+          "Fruity Milkshake": "f/fb/Fruity_Milkshake.png",
+          "Frutti di Mare Pizza": "5/5f/Frutti_di_Mare_Pizza.png",
+          "Garlic": "c/cc/Garlic.png",
+          "Garlic Bread": "7/7f/Garlic_Bread.png",
+          "Ginger": "8/85/Ginger.png",
+          "Ginger Essential Oil": "4/47/Ginger_Essential_Oil.png",
+          "Gingerbread Cookie": "0/02/Gingerbread_Cookie.png",
+          "Gnocchi": "8/81/Gnocchi.png",
+          "Goat Cheese": "c/c8/Goat_Cheese.png",
+          "Goat Cheese Toast": "8/87/Goat_Cheese_Toast.png",
+          "Goat Feed": "e/ed/Goat_Feed.png",
+          "Goat Milk": "4/45/Goat_Milk.png",
+          "Gold Bar": "4/4e/Gold_Bar.png",
+          "Gold Ore": "f/f7/Gold_Ore.png",
+          "Gracious Bouquet": "8/82/Gracious_Bouquet.png",
+          "Grape Jam": "f/fa/Grape_Jam.png",
+          "Grape Juice": "2/24/Grape_Juice.png",
+          "Grapes": "3/39/Grapes.png",
+          "Green Smoothie": "f/f6/Green_Smoothie.png",
+          "Green Tea": "8/8f/Green_Tea.png",
+          "Grilled Asparagus": "c/cf/Grilled_Asparagus.png",
+          "Grilled Eggplant": "7/77/Grilled_Eggplant.png",
+          "Grilled Lamb Skewer": "c/cb/Grilled_Lamb_Skewer.png",
+          "Grilled Onion": "7/70/Grilled_Onion.png",
+          "Guava": "8/87/Guava.png",
+          "Guava Compote": "4/4e/Guava_Compote.png",
+          "Guava Cupcake": "9/9e/Guava_Cupcake.png",
+          "Guava Juice": "c/c7/Guava_Juice.png",
+          "Hamburger": "a/a4/Hamburger.png",
+          "Hammer": "8/81/Hammer.png",
+          "Hand Drill": "d/d4/Hand_Drill.png",
+          "Hand Pies": "9/96/Hand_Pies.png",
+          "Honey": "c/c6/Honey.png",
+          "Honey Apple Cake": "1/16/Honey_Apple_Cake.png",
+          "Honey Face Mask": "f/f1/Honey_Face_Mask.png",
+          "Honey Peanuts": "a/ad/Honey_Peanuts.png",
+          "Honey Popcorn": "b/b1/Honey_Popcorn.png",
+          "Honey Soap": "8/8f/Honey_Soap.png",
+          "Honey Tea": "b/b8/Honey_Tea.png",
+          "Honey Toast": "6/6d/Honey_Toast.png",
+          "Honeycomb": "7/7c/Honeycomb.png",
+          "Hot Chocolate": "b/b0/Hot_Chocolate.png",
+          "Hot Dog": "8/82/Hot_Dog.png",
+          "Hummus": "7/78/Hummus.png",
+          "Hummus Wrap": "3/31/Hummus_Wrap.png",
+          "Iced Banana Latte": "b/b0/Iced_Banana_Latte.png",
+          "Iced Tea": "4/4f/Iced_Tea.png",
+          "Indigo": "4/48/Indigo.png",
+          "Iron Bar": "6/6c/Iron_Bar.png",
+          "Iron Bracelet": "4/40/Iron_Bracelet.png",
+          "Iron Ore": "8/87/Iron_Ore.png",
+          "Jelly Beans": "e/ed/Jelly_Beans.png",
+          "Kimchi": "4/43/Kimchi.png",
+          "Land Deed": "e/e0/Land_Deed.png",
+          "Lemon": "3/35/Lemon.png",
+          "Lemon Cake": "6/6c/Lemon_Cake.png",
+          "Lemon Candle": "8/8a/Lemon_Candle.png",
+          "Lemon Curd": "e/ea/Lemon_Curd.png",
+          "Lettuce": "d/da/Lettuce.png",
+          "Lily": "0/0a/Lily.png",
+          "Lobster Skewer": "6/62/Lobster_Skewer.png",
+          "Lobster Sushi": "7/7b/Lobster_Sushi.png",
+          "Lobster Tail": "5/5d/Lobster_Tail.png",
+          "Lollipop": "5/58/Lollipop.png",
+          "Mallet": "7/7b/Mallet.png",
+          "Mango": "3/38/Mango.png",
+          "Map Piece": "f/fe/Map_Piece.png",
+          "Marker Stake": "9/91/Marker_Stake.png",
+          "Meat Bucket": "5/5e/Meat_Bucket.png",
+          "Milk": "9/92/Milk.png",
+          "Mint": "1/13/Mint.png",
+          "Mint Fudge": "4/40/Mint_Fudge.png",
+          "Mint Ice Cream": "b/b9/Mint_Ice_Cream.png",
+          "Mint Tea": "4/40/Mint_Tea.png",
+          "Mixed Smoothie": "6/6b/Mixed_Smoothie.png",
+          "Mocha Milkshake": "7/7d/Mocha_Milkshake.png",
+          "Mushroom": "8/8c/Mushroom.png",
+          "Mushroom Soup": "d/d7/Mushroom_Soup.png",
+          "Nail": "4/40/Nail.png",
+          "Oats": "3/34/Oats.png",
+          "Olive": "5/5f/Olive.png",
+          "Onion": "5/51/Onion.png",
+          "Orange": "4/43/Orange.png",
+          "Orange Juice": "7/7e/Orange_Juice.png",
+          "Orange Sorbet": "1/11/Orange_Sorbet.png",
+          "Paint Bucket": "9/92/Paint_Bucket.png",
+          "Passion Fruit": "f/fb/Passion_Fruit.png",
+          "Passion Fruit Jam": "d/d7/Passion_Fruit_Jam.png",
+          "Passion Fruit Pie": "6/65/Passion_Fruit_Pie.png",
+          "Peach": "e/e2/Peach.png",
+          "Peach Ice Cream": "7/72/Peach_Ice_Cream.png",
+          "Peach Tart": "0/07/Peach_Tart.png",
+          "Peanut Butter Milkshake": "b/b7/Peanut_Butter_Milkshake.png",
+          "Peanuts": "9/9b/Peanuts.png",
+          "Peony": "5/50/Peony.png",
+          "Pickaxe": "b/b7/Pickaxe.png",
+          "Pineapple": "f/fb/Pineapple.png",
+          "Pineapple Cake": "e/e1/Pineapple_Cake.png",
+          "Pineapple Coconut Bars": "6/61/Pineapple_Coconut_Bars.png",
+          "Pizza": "f/f4/Pizza.png",
+          "Plain Donut": "0/08/Plain_Donut.png",
+          "Plain Yogurt": "6/6a/Plain_Yogurt.png",
+          "Plank": "0/0d/Plank.png",
+          "Plum": "e/e6/Plum.png",
+          "Plum Smoothie": "c/c5/Plum_Smoothie.png",
+          "Pomegranate": "1/1b/Pomegranate.png",
+          "Potato": "c/c2/Potato.png",
+          "Potato Omelet": "c/ca/Potato_Omelet.png",
+          "Potted Plant": "a/a1/Potted_Plant.png",
+          "Pumpkin": "6/64/Pumpkin.png",
+          "Pumpkin Soup": "5/59/Pumpkin_Soup.png",
+          "Raspberry": "1/1f/Raspberry.png",
+          "Red Scarf": "4/4f/Red_Scarf.png",
+          "Refined Coal": "b/b5/Refined_Coal.png",
+          "Rice": "d/da/Rice.png",
+          "Rich Soap": "2/2e/Rich_Soap.png",
+          "Roasted Tomatoes": "0/04/Roasted_Tomatoes.png",
+          "Rustic Bouquet": "9/93/Rustic_Bouquet.png",
+          "Samosa": "b/b5/Samosa.png",
+          "Saw": "0/0a/Saw.png",
+          "Screw": "5/59/Screw.png",
+          "Sesame": "0/07/Sesame.png",
+          "Sesame Ice Cream": "7/77/Sesame_Ice_Cream.png",
+          "Shovel": "7/77/Shovel.png",
+          "Snack Mix": "a/a3/Snack_Mix.png",
+          "Soy Sauce": "9/97/Soy_Sauce.png",
+          "Soyabean": "9/9e/Soybean.png",
+          "Stone Block": "3/37/Stone_Block.png",
+          "Strawberry": "6/6d/Strawberry.png",
+          "Strawberry Candle": "2/21/Strawberry_Candle.png",
+          "Strawberry Ice Cream": "8/8d/Strawberry_Ice_Cream.png",
+          "Strawberry Jam": "4/40/Strawberry_Jam.png",
+          "Sushi Roll": "c/cf/Sushi_Roll.png",
+          "Sweet Porridge": "f/fb/Sweet_Porridge.png",
+          "TNT Barrel": "6/69/TNT_Barrel.png",
+          "Tar Bucket": "f/f8/Tar_Bucket.png",
+          "Tofu Dog": "f/fa/Tofu_Dog.png",
+          "Tomato": "9/9d/Tomato.png",
+          "Tomato Sauce": "0/09/Tomato_Sauce.png",
+          "Vanilla Ice Cream": "1/15/Vanilla_Ice_Cream.png",
+          "Vanilla Milkshake": "1/14/Vanilla_Milkshake.png",
+          "Wheat": "e/e2/Wheat.png",
+          "Wheat Bundle": "5/5d/Wheat_Bundle.png",
+          "Wood Panel": "0/02/Wood_Panel.png",
+          "Wool": "3/34/Wool.png",
+          "Yogurt Smoothie": "d/d2/Yogurt_Smoothie.png",
+      });
+      const getCatalogImage = key => Object.hasOwn(CATALOG_IMAGE_PATHS, key)
+          ? `https://static.wikia.nocookie.net/hayday/images/${CATALOG_IMAGE_PATHS[key]}/revision/latest`
+          : '';
+      const CATALOG_CATEGORIES = [...new Set(HAY_DAY_CATALOG.map(item => item[2]))];
+      const CATALOG_SYMBOLS = Object.freeze({
+          "Wheat": "🌾",
+          "Oats": "🌾",
+          "Rice": "🌾",
+          "Sesame": "🌾",
+          "Sugarcane": "🌾",
+          "Wheat Bundle": "🌾",
+          "Corn": "🌽",
+          "Soyabean": "🫘",
+          "Black Bean": "🫘",
+          "Chickpea": "🫘",
+          "Cacao": "🫘",
+          "Coffee Bean": "🫘",
+          "Carrot": "🥕",
+          "Indigo": "🪻",
+          "Pumpkin": "🎃",
+          "Cotton": "☁️",
+          "Chili Pepper": "🌶️",
+          "Tomato": "🍅",
+          "Strawberry": "🍓",
+          "Raspberry": "🍓",
+          "Potato": "🥔",
+          "Chamomile": "🌼",
+          "Asparagus": "🌿",
+          "Mint": "🌿",
+          "Pineapple": "🍍",
+          "Lily": "🌷",
+          "Lettuce": "🥬",
+          "Cabbage": "🥬",
+          "Garlic": "🧄",
+          "Sunflower": "🌻",
+          "Onion": "🧅",
+          "Cucumber": "🥒",
+          "Beetroot": "🫜",
+          "Bell Pepper": "🫑",
+          "Ginger": "🫚",
+          "Tea Leaf": "🍃",
+          "Peony": "🌸",
+          "Broccoli": "🥦",
+          "Grapes": "🍇",
+          "Mushroom": "🍄",
+          "Eggplant": "🍆",
+          "Watermelon": "🍉",
+          "Apple": "🍎",
+          "Cherry": "🍒",
+          "Blackberry": "🫐",
+          "Blueberry": "🫐",
+          "Olive": "🫒",
+          "Lemon": "🍋",
+          "Orange": "🍊",
+          "Peach": "🍑",
+          "Banana": "🍌",
+          "Mango": "🥭",
+          "Coconut": "🥥",
+          "Egg": "🥚",
+          "Milk": "🥛",
+          "Goat Milk": "🥛",
+          "Bacon": "🥓",
+          "Wool": "🧶",
+          "Lamb Chop": "🥩",
+          "Fish Fillet": "🐟",
+          "Honeycomb": "🍯",
+          "Lobster Tail": "🦞",
+          "Duck Feather": "🪶",
+          "Peanuts": "🥜",
+          "Axe": "🪓",
+          "Saw": "🪚",
+          "Shovel": "🪏",
+          "Pickaxe": "⛏️",
+          "TNT Barrel": "🧨",
+          "Dynamite": "🧨",
+          "Screw": "🔩",
+          "Bolt": "🔩",
+          "Nail": "🔩",
+          "Brick": "🧱",
+          "Clay": "🧱",
+          "Stone Block": "🧱",
+          "Land Deed": "🗺️",
+          "Map Piece": "🗺️",
+          "Marker Stake": "🪵",
+          "Plank": "🪵",
+          "Wood Panel": "🪵",
+          "Mallet": "🔨",
+          "Hammer": "🔨",
+          "Paint Bucket": "🪣",
+          "Tar Bucket": "🪣",
+          "Hand Drill": "🗜️",
+          "Duct Tape": "🧰"
+      });
+      const CATALOG_SYMBOL_RULES = [
+          [/smoothie|milkshake|juice|lemonade/i, "🥤"],
+          [/espresso|latte|mocha|hot chocolate/i, "☕"],
+          [/\btea\b/i, "🍵"],
+          [/pizza/i, "🍕"],
+          [/burger/i, "🍔"],
+          [/hot dog|corn dog|tofu dog|onion dog/i, "🌭"],
+          [/sandwich|toast|bagel/i, "🥪"],
+          [/taco|nachos|quesadilla/i, "🌮"],
+          [/sushi|rice ball/i, "🍣"],
+          [/pasta|lasagna|gnocchi|spaghetti/i, "🍝"],
+          [/noodle/i, "🍜"],
+          [/salad|veggie platter/i, "🥗"],
+          [/soup|stew|porridge|breakfast bowl/i, "🥣"],
+          [/pie|tart|quiche/i, "🥧"],
+          [/cupcake|muffin/i, "🧁"],
+          [/cake|cheesecake|chocolate roll/i, "🍰"],
+          [/ice cream|sorbet|popsicle|banana split|affogato/i, "🍦"],
+          [/donut/i, "🍩"],
+          [/waffle/i, "🧇"],
+          [/pancake/i, "🥞"],
+          [/cookie|macaroon/i, "🍪"],
+          [/popcorn/i, "🍿"],
+          [/bread/i, "🍞"],
+          [/yogurt/i, "🍮"],
+          [/omelet|bacon and eggs/i, "🍳"],
+          [/jam|jelly|chutney|marmalade|pickles|sauce|curd|compote|mayonnaise|dressing|dip|oil/i, "🫙"],
+          [/fries|chips/i, "🍟"],
+          [/fudge|candy bar|chocolate/i, "🍫"],
+          [/candy|toffee|brittle/i, "🍬"],
+          [/lollipop/i, "🍭"],
+          [/cheese/i, "🧀"],
+          [/butter/i, "🧈"],
+          [/honey|syrup/i, "🍯"],
+          [/cream/i, "🥛"],
+          [/sugar/i, "🥚"],
+          [/doner|wrap|falafel/i, "🥙"],
+          [/fried rice/i, "🍚"],
+          [/skewer|grilled/i, "🍢"],
+          [/bracelet|ring|pendant|necklace/i, "💍"],
+          [/candle|beeswax/i, "🕯️"],
+          [/bouquet|flower crown/i, "💐"],
+          [/\bhat\b/i, "👒"],
+          [/scarf|shawl/i, "🧣"],
+          [/sweater/i, "🧥"],
+          [/shirt|fabric/i, "👕"],
+          [/dress/i, "👗"],
+          [/chaps/i, "👖"],
+          [/lotion|diffuser|perfume|essential oil/i, "🧴"],
+          [/soap/i, "🧼"],
+          [/tea pot/i, "🫖"],
+          [/mug/i, "☕"],
+          [/potted plant/i, "🪴"],
+          [/pillow|blanket|pad/i, "🛏️"]
+      ];
+      const CATALOG_CATEGORY_SYMBOLS = Object.freeze({
+          'พืชแปลง': '🌱', 'ผลผลิตต้นไม้และพุ่ม': '🍐', 'ผลผลิตสัตว์และประมง': '🧺',
+          'แร่และโลหะ': '🪨', 'อาหารสัตว์': '🌾', 'เครื่องมือ': '🛠️',
+          'วัตถุดิบอื่น': '🧱', 'วัสดุอัปเมือง': '🧱',
+          'โรงนา': '🧰', 'ไซโล': '🧰', 'ขยายที่': '🗺️',
+          'สินค้าแปรรูปนอกกลุ่มอาหาร': '🎁'
+      });
+      const CATALOG_ENTRY_BY_KEY = new Map(HAY_DAY_CATALOG.map(entry => [entry[0], entry]));
+      const getCatalogSymbol = key => {
+          if (Object.hasOwn(CATALOG_SYMBOLS, key)) return CATALOG_SYMBOLS[key];
+          const category = CATALOG_ENTRY_BY_KEY.get(key)?.[2];
+          if (Object.hasOwn(CATALOG_CATEGORY_SYMBOLS, category)) return CATALOG_CATEGORY_SYMBOLS[category];
+          return CATALOG_SYMBOL_RULES.find(([pattern]) => pattern.test(key))?.[1] || '🍽️';
+      };
+    const ORIGINAL_PRODUCTS = [
       { id: 'p1', name: 'ไม้กระดาน', category: 'อัปเกรดยุ้ง', level: 1, saleType: 'single', stepQty: 1, price: 5, description: 'ขายเดี่ยว • ชิ้นละ 5฿', icon: '🪵', imageUrl: '', active: true },
       { id: 'p2', name: 'เทปกาว', category: 'อัปเกรดยุ้ง', level: 1, saleType: 'single', stepQty: 1, price: 5, description: 'ขายเดี่ยว • ชิ้นละ 5฿', icon: '🩹', imageUrl: '', active: true },
       { id: 'p3', name: 'สลักเกลียว', category: 'อัปเกรดยุ้ง', level: 1, saleType: 'set', stepQty: 10, price: 45, description: 'ขายเซ็ต • 10 ชิ้น 45฿', icon: '🔩', imageUrl: '', active: true },
@@ -1102,6 +2025,30 @@
       { id: 'p8', name: 'ค้อนไม้', category: 'ขยายพื้นที่', level: 22, saleType: 'set', stepQty: 10, price: 55, description: 'ขายเซ็ต • 10 ชิ้น 55฿', icon: '🔨', imageUrl: '', active: true },
       { id: 'p9', name: 'หลักเขต', category: 'ขยายพื้นที่', level: 22, saleType: 'unit', stepQty: 20, price: 10, description: 'ขายหน่วย • 20 ชิ้น 10฿', icon: '📍', imageUrl: '', active: true },
     ];
+
+    const originalProductKeys = ['Plank', 'Duct Tape', 'Bolt', 'Nail', 'Screw', 'Wood Panel', 'Land Deed', 'Mallet', 'Marker Stake'];
+    const categoryNames = { 'โรงนา': 'อัปเกรดยุ้ง', 'ไซโล': 'อัปเกรดไซโล', 'ขยายที่': 'ขยายพื้นที่' };
+    const catalogName = value => String(value ?? '').trim().toLowerCase();
+    const catalogKeyByName = new Map(HAY_DAY_CATALOG.flatMap(([key, name]) =>
+      [[catalogName(name), key], [catalogName(key), key]]));
+    const DEFAULT_PRODUCTS = [
+      ...ORIGINAL_PRODUCTS,
+      ...HAY_DAY_CATALOG.filter(([key]) => !originalProductKeys.includes(key)).map(([key, name, category, level]) => {
+        const price = level <= 10 ? 5 : level <= 30 ? 10 : 15;
+        return {
+          id: `catalog:${key}`, name, category: categoryNames[category] || category, level,
+          saleType: 'single', stepQty: 1, price, description: `ขายเดี่ยว • ชิ้นละ ${price}฿`,
+          icon: getCatalogSymbol(key), imageUrl: '', active: true,
+        };
+      }),
+    ];
+    const CATALOG_IMPORT_KEY = 'nori_hayday_full_catalog_v1';
+
+    const resolveCatalogKey = product => {
+      if (/^p[1-9]$/.test(product.id || '')) return originalProductKeys[Number(product.id.slice(1)) - 1];
+      if (product.id?.startsWith('catalog:')) return product.id.slice(8);
+      return catalogKeyByName.get(catalogName(product.name));
+    };
 
     const DEFAULT_ORDERS = [
       {
@@ -1215,8 +2162,10 @@
       }
     }
 
+    let musicStartPending = false;
     async function startMusic(silent = false) {
-      if (state.isMusicPlaying) return;
+      if (state.isMusicPlaying || musicStartPending || typeof Tone === 'undefined') return;
+      musicStartPending = true;
       try {
         if (typeof Tone !== 'undefined') {
           await Tone.start();
@@ -1241,11 +2190,14 @@
           }
         }
         state.isMusicPlaying = true;
+        state.hasAutoStartedMusic = true;
         updateVinylUI(true);
         startVinylNotes();
         if (!silent) showToast('เปิดเพลงบรรเลงร้านโนริเฮเดย์แล้ว ♪');
       } catch (err) {
         console.error('ไม่สามารถเล่นเสียงเพลงได้:', err);
+      } finally {
+        musicStartPending = false;
       }
     }
 
@@ -1276,18 +2228,12 @@
     function setupAutoPlayMusic() {
       const handleFirstInteraction = (event) => {
         if (state.hasAutoStartedMusic) return;
-        const vinylBtn = document.getElementById('vinylBtn');
-        // หากผู้ใช้กดที่ปุ่มแผ่นเสียงโดยตรง ให้ฟังก์ชัน toggleMusic จัดการแทนเพื่อไม่ให้สลับซ้ำ
-        if (vinylBtn && vinylBtn.contains(event.target)) {
-          state.hasAutoStartedMusic = true;
-          return;
-        }
-        state.hasAutoStartedMusic = true;
+        if (document.getElementById('vinylBtn')?.contains(event.target)) return;
+        // iPad Safari unlocks Web Audio on a completed tap, not pointerdown.
         startMusic(true);
-        document.removeEventListener('pointerdown', handleFirstInteraction, true);
       };
-
-      document.addEventListener('pointerdown', handleFirstInteraction, true);
+      document.addEventListener('touchend', handleFirstInteraction, { capture: true, passive: true });
+      document.addEventListener('click', handleFirstInteraction, true);
     }
 
     // ---------------------------------------------------------
@@ -1317,7 +2263,19 @@
         const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
 
         const rawProducts = savedProducts ? JSON.parse(savedProducts) : structuredClone(DEFAULT_PRODUCTS);
-        state.products = rawProducts.map(normalizeProduct);
+        if (!Array.isArray(rawProducts)) throw new Error('Invalid saved product list');
+        const needsCatalogImport = localStorage.getItem(CATALOG_IMPORT_KEY) !== '1';
+        const existingIds = new Set(rawProducts.map(product => product.id));
+        const existingKeys = new Set(rawProducts.map(resolveCatalogKey));
+        const missing = needsCatalogImport ? DEFAULT_PRODUCTS.filter(product =>
+          !existingIds.has(product.id) && !existingKeys.has(resolveCatalogKey(product))) : [];
+        state.products = [...rawProducts, ...missing].map(normalizeProduct);
+        if (needsCatalogImport) {
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(state.products));
+            localStorage.setItem(CATALOG_IMPORT_KEY, '1');
+          } catch {}
+        }
         state.orders = savedOrders ? JSON.parse(savedOrders) : structuredClone(DEFAULT_ORDERS);
       } catch (err) {
         console.error('ไม่สามารถอ่านข้อมูลจาก LocalStorage:', err);
@@ -1343,6 +2301,34 @@
     }
 
     // ป้องกัน XSS เมื่อแสดงข้อความที่ผู้ใช้กรอก
+    const PRODUCT_ILLUSTRATIONS = {
+  "Plank": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <defs> <linearGradient id=\"woodTop\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"> <stop offset=\"0%\" stop-color=\"#f8cf8c\"/> <stop offset=\"100%\" stop-color=\"#e2a659\"/> </linearGradient> <linearGradient id=\"woodSide\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"> <stop offset=\"0%\" stop-color=\"#c47f35\"/> <stop offset=\"100%\" stop-color=\"#9c5e1f\"/> </linearGradient> </defs> <polygon points=\"18,52 78,24 94,35 34,65\" fill=\"url(#woodTop)\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"18,52 34,65 34,74 18,61\" fill=\"#b36d28\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"34,65 94,35 94,44 34,74\" fill=\"url(#woodSide)\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"8,42 66,12 84,23 26,54\" fill=\"url(#woodTop)\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"8,42 26,54 26,64 8,51\" fill=\"#b36d28\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"26,54 84,23 84,33 26,64\" fill=\"url(#woodSide)\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M25,40 Q45,28 68,18 M35,45 Q55,34 74,24\" stroke=\"#b8762e\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\"/> </svg>",
+  "Duct Tape": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <defs> <linearGradient id=\"tapePink\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"> <stop offset=\"0%\" stop-color=\"#ff9ebb\"/> <stop offset=\"100%\" stop-color=\"#f36895\"/> </linearGradient> <linearGradient id=\"tapeTop\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"> <stop offset=\"0%\" stop-color=\"#ffd1e1\"/> <stop offset=\"100%\" stop-color=\"#ffb5ce\"/> </linearGradient> </defs> <path d=\"M52,65 L86,58 L92,38 L62,45 Z\" fill=\"#ffc4d7\" stroke=\"#d84b7a\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M16,36 C16,50 16,54 16,56 C16,67 30,74 46,74 C62,74 76,67 76,56 L76,36 Z\" fill=\"url(#tapePink)\" stroke=\"#d84b7a\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"46\" cy=\"36\" rx=\"30\" ry=\"15\" fill=\"url(#tapeTop)\" stroke=\"#d84b7a\" stroke-width=\"2\"/> <ellipse cx=\"46\" cy=\"36\" rx=\"15\" ry=\"7.5\" fill=\"#e6b88a\" stroke=\"#b58353\" stroke-width=\"2\"/> <path d=\"M28,56 C26,53 22,55 25,59 C25,59 28,62 28,62 C28,62 31,59 31,59 C34,55 30,53 28,56 Z\" fill=\"#ffd9e6\"/> <path d=\"M48,60 C46,57 42,59 45,63 C45,63 48,66 48,66 C48,66 51,63 51,63 C54,59 50,57 48,60 Z\" fill=\"#ffd9e6\"/> <path d=\"M65,54 C63,51 59,53 62,57 C62,57 65,60 65,60 C65,60 68,57 68,57 C71,53 67,51 65,54 Z\" fill=\"#ffd9e6\"/> </svg>",
+  "Bolt": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <defs> <linearGradient id=\"metalGrad\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"> <stop offset=\"0%\" stop-color=\"#f0f4f8\"/> <stop offset=\"50%\" stop-color=\"#cbd5e1\"/> <stop offset=\"100%\" stop-color=\"#94a3b8\"/> </linearGradient> </defs> <path d=\"M58,28 L16,52 C12,55 17,67 24,64 L66,40 Z\" fill=\"url(#metalGrad)\" stroke=\"#64748b\" stroke-width=\"2\"/> <path d=\"M24,47 C22,53 26,60 31,60 M32,43 C30,49 34,56 39,56 M40,38 C38,44 42,51 47,51 M48,34 C46,40 50,47 55,47\" stroke=\"#64748b\" stroke-width=\"2\" fill=\"none\"/> <polygon points=\"56,14 74,12 84,26 76,42 58,44 48,30\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"56,14 68,20 76,34 68,43 58,44 48,30\" fill=\"#cbd5e1\" stroke=\"#64748b\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/> <polygon points=\"62,50 82,46 92,56 84,70 64,74 54,64\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"73\" cy=\"59\" rx=\"8\" ry=\"5\" fill=\"#64748b\"/> </svg>",
+  "Nail": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <g transform=\"rotate(-18 35 45)\"> <path d=\"M28,20 L33,20 L31,66 L29,74 L27,66 Z\" fill=\"#cbd5e1\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"30\" cy=\"19\" rx=\"9\" ry=\"4\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\"/> </g> <g transform=\"rotate(15 52 42)\"> <path d=\"M47,14 L53,14 L51,64 L49,73 L47,64 Z\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"50\" cy=\"13\" rx=\"10\" ry=\"4.5\" fill=\"#f1f5f9\" stroke=\"#64748b\" stroke-width=\"2\"/> </g> <g transform=\"rotate(42 66 52)\"> <path d=\"M62,22 L68,22 L66,68 L64,76 L62,68 Z\" fill=\"#cbd5e1\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"65\" cy=\"21\" rx=\"9\" ry=\"4\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\"/> </g> </svg>",
+  "Screw": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <g transform=\"rotate(-22 46 34)\"> <polygon points=\"10,35 55,28 55,42\" fill=\"#cbd5e1\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M22,31 L20,39 M30,30 L28,40 M38,29 L36,41 M46,28 L44,42\" stroke=\"#475569\" stroke-width=\"2.5\" stroke-linecap=\"round\"/> <ellipse cx=\"58\" cy=\"35\" rx=\"7\" ry=\"13\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\"/> <path d=\"M56,29 L60,41 M54,36 L62,34\" stroke=\"#64748b\" stroke-width=\"2.5\" stroke-linecap=\"round\"/> </g> <g transform=\"rotate(-12 60 58)\"> <polygon points=\"24,60 69,53 69,67\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M36,56 L34,64 M44,55 L42,65 M52,54 L50,66 M60,53 L58,67\" stroke=\"#475569\" stroke-width=\"2.5\" stroke-linecap=\"round\"/> <ellipse cx=\"72\" cy=\"60\" rx=\"7\" ry=\"13\" fill=\"#f1f5f9\" stroke=\"#64748b\" stroke-width=\"2\"/> <path d=\"M70,54 L74,66 M68,61 L76,59\" stroke=\"#64748b\" stroke-width=\"2.5\" stroke-linecap=\"round\"/> </g> </svg>",
+  "Wood Panel": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <polygon points=\"10,48 64,24 92,40 38,66\" fill=\"#e6a95c\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"10,48 38,66 38,74 10,56\" fill=\"#b36d28\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"38,66 92,40 92,48 38,74\" fill=\"#c77d32\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"14,36 66,12 90,28 38,54\" fill=\"#f7cc86\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"14,36 38,54 38,62 14,44\" fill=\"#c27a30\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"38,54 90,28 90,36 38,62\" fill=\"#d99041\" stroke=\"#8c4f14\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <line x1=\"26\" y1=\"45\" x2=\"78\" y2=\"20\" stroke=\"#b8762e\" stroke-width=\"1.8\"/> </svg>",
+  "Land Deed": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <g transform=\"rotate(-8 50 42)\"> <rect x=\"20\" y=\"8\" width=\"58\" height=\"68\" rx=\"4\" fill=\"#fff7e6\" stroke=\"#b58858\" stroke-width=\"2\"/> <rect x=\"24\" y=\"12\" width=\"50\" height=\"60\" rx=\"2\" fill=\"none\" stroke=\"#dec096\" stroke-width=\"1.5\"/> <path d=\"M44,18 C46,14 52,14 54,18 C57,16 59,20 55,23 L49,27 L43,23 C39,20 41,16 44,18 Z\" fill=\"#e05353\"/> <line x1=\"32\" y1=\"32\" x2=\"66\" y2=\"32\" stroke=\"#c9a981\" stroke-width=\"2\" stroke-linecap=\"round\"/> <line x1=\"36\" y1=\"38\" x2=\"62\" y2=\"38\" stroke=\"#c9a981\" stroke-width=\"2\" stroke-linecap=\"round\"/> <polygon points=\"36,46 58,44 64,56 32,58\" fill=\"#b4e376\" stroke=\"#6fa832\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/> <line x1=\"47\" y1=\"45\" x2=\"48\" y2=\"57\" stroke=\"#6fa832\" stroke-width=\"1.5\"/> <line x1=\"34\" y1=\"52\" x2=\"61\" y2=\"50\" stroke=\"#6fa832\" stroke-width=\"1.5\"/> <circle cx=\"64\" cy=\"62\" r=\"7\" fill=\"#f2748c\" stroke=\"#c93b56\" stroke-width=\"1.8\"/> <circle cx=\"64\" cy=\"62\" r=\"4\" fill=\"none\" stroke=\"#ffdbe2\" stroke-width=\"1\"/> </g> </svg>",
+  "Mallet": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <path d=\"M44,32 L72,68 C75,72 67,78 63,73 L36,38 Z\" fill=\"#f3be7a\" stroke=\"#8c5319\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M53,44 L73,69 C76,73 66,79 62,74 L44,50 Z\" fill=\"#f46696\" stroke=\"#b52656\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <line x1=\"49\" y1=\"53\" x2=\"57\" y2=\"48\" stroke=\"#ff9ec0\" stroke-width=\"2\" stroke-linecap=\"round\"/> <line x1=\"55\" y1=\"60\" x2=\"63\" y2=\"55\" stroke=\"#ff9ec0\" stroke-width=\"2\" stroke-linecap=\"round\"/> <line x1=\"61\" y1=\"67\" x2=\"69\" y2=\"62\" stroke=\"#ff9ec0\" stroke-width=\"2\" stroke-linecap=\"round\"/> <path d=\"M22,28 C28,18 42,14 58,18 C52,22 48,25 46,30 L34,42 C30,45 20,35 22,28 Z\" fill=\"#cbd5e1\" stroke=\"#64748b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"26\" cy=\"36\" rx=\"7\" ry=\"9\" transform=\"rotate(-35 26 36)\" fill=\"#e2e8f0\" stroke=\"#64748b\" stroke-width=\"2\"/> </svg>",
+  "Marker Stake": "<svg viewBox=\"0 0 100 85\" class=\"w-full h-full\" aria-hidden=\"true\"> <path d=\"M24,68 Q20,58 30,62 Q35,52 44,60 Q52,50 58,60 Q68,54 72,64 Q80,62 76,70 Z\" fill=\"#95d654\" stroke=\"#5c9e23\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <path d=\"M52,22 C64,20 74,25 84,22 L72,34 L82,42 C70,45 62,40 50,42 Z\" fill=\"#f76898\" stroke=\"#be295b\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <polygon points=\"42,14 54,14 51,64 45,70 40,64\" fill=\"#eab368\" stroke=\"#8c5319\" stroke-width=\"2\" stroke-linejoin=\"round\"/> <ellipse cx=\"48\" cy=\"14\" rx=\"6\" ry=\"3\" fill=\"#f7d59c\" stroke=\"#8c5319\" stroke-width=\"2\"/> </svg>"
+};
+
+    function renderProductVisual(product, sizeClass) {
+      const key = resolveCatalogKey(product);
+      const customImage = product.imageUrl?.trim();
+      const catalogImage = getCatalogImage(key);
+      const image = customImage === catalogImage || customImage?.startsWith('https://static.wikia.nocookie.net/hayday/images/') ? '' : customImage;
+      const illustration = Object.hasOwn(PRODUCT_ILLUSTRATIONS, key) ? PRODUCT_ILLUSTRATIONS[key] : '';
+      const icon = customImage ? (product.icon || '🎁') : (product.icon && product.icon !== '🎁' ? product.icon : (key ? getCatalogSymbol(key) : '🎁'));
+      return `<div class="relative w-full h-full overflow-hidden grid place-items-center [container-type:inline-size] bg-gradient-to-br from-blush-50 via-white to-lilac-100/80">
+        <div class="w-full h-full grid place-items-center overflow-hidden" aria-hidden="true">${illustration || `<span class="${sizeClass} leading-none" style="font-size:60cqi">${escapeHtml(icon)}</span>`}</div>
+        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async"
+          class="absolute inset-0 w-full h-full object-cover"
+          style="visibility:hidden" onload="this.style.visibility='visible';this.previousElementSibling.style.visibility='hidden'"
+          onerror="this.style.visibility='hidden';this.previousElementSibling.style.visibility='visible'" />` : ''}
+      </div>`;
+    }
+
     function escapeHtml(str) {
       return String(str ?? '')
         .replace(/&/g, '&amp;')
@@ -1365,8 +2351,13 @@
       if (pageName !== 'order-view') {
         state.orderViewFromAdmin = false;
         try {
-          if (window.location.hash && window.location.hash.startsWith('#order=')) {
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          const url = new URL(window.location.href);
+          const hasOrderQuery = url.searchParams.has('order');
+          const hasOrderHash = new URLSearchParams(url.hash.slice(1)).has('order');
+          if (hasOrderHash || hasOrderQuery) {
+            if (hasOrderHash) url.hash = '';
+            url.searchParams.delete('order');
+            window.history.replaceState(null, '', url);
           }
         } catch (err) {
           // ข้ามกรณีทำงานใน iframe ที่มีข้อจำกัดเรื่อง history
@@ -1458,7 +2449,7 @@
       }
 
       if (state.currentPage === 'home') {
-        renderProductGrid(productId);
+        updateProductCardQty(productId, next);
         triggerMascotItemFeedback(productId, deltaPieces);
       } else if (state.currentPage === 'cart') {
         renderCartPage();
@@ -1799,7 +2790,29 @@
       renderProductGrid();
     }
 
-    function renderProductGrid(animatedProductId = null) {
+    function updateProductCardQty(productId, qty) {
+      const card = document.querySelector(`#productGrid [data-product-card="${CSS.escape(productId)}"]`);
+      if (!card) return;
+
+      const controls = card.querySelector('[data-cart-controls]');
+      controls.hidden = qty === 0;
+      const badge = controls.firstElementChild;
+      badge.textContent = qty.toLocaleString();
+      const surface = card.querySelector('[role="button"]');
+      surface.classList.toggle('border-blush-300', qty > 0);
+      surface.classList.toggle('ring-2', qty > 0);
+      surface.classList.toggle('ring-blush-100', qty > 0);
+      surface.classList.toggle('border-lilac-200/80', qty === 0);
+      surface.classList.toggle('hover:border-lilac-300', qty === 0);
+
+      if (qty > 0 && badge.animate) {
+        badge.getAnimations().forEach(animation => animation.cancel());
+        badge.animate([{ transform: 'scale(0.8)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }],
+          { duration: 250, easing: 'ease-out' });
+      }
+    }
+
+    function renderProductGrid() {
       const grid = document.getElementById('productGrid');
       const emptyState = document.getElementById('emptyCategoryState');
       const keyword = state.searchQuery.toLowerCase();
@@ -1824,7 +2837,6 @@
         .map((product) => {
           const qty = state.cart[product.id] || 0;
           const isSelected = qty > 0;
-          const popClass = animatedProductId === product.id ? 'animate-pop-badge' : '';
           const stepQty = Math.max(1, Number(product.stepQty) || 1);
           const priceLabel = stepQty > 1 ? `฿${product.price}/${stepQty}ชิ้น` : `฿${product.price}`;
           const detailText =
@@ -1832,30 +2844,17 @@
             (stepQty > 1 ? `${stepQty} ชิ้น ${product.price} บาท` : `ขายเดี่ยว • ชิ้นละ ${product.price}฿`);
 
           // ส่วนภาพสินค้า: ขยายเต็มกรอบสี่เหลี่ยมจัตุรัส (1:1) อัตโนมัติให้เห็นชัดเจนพอดีกรอบ
-          const visualBlock = product.imageUrl
-            ? `<img
-                 src="${escapeHtml(product.imageUrl)}"
-                 alt="${escapeHtml(product.name)}"
-                 onerror="this.onerror=null; this.src='https://placehold.co/320x320/F3EBFF/926BE6?text=Demo';"
-                 class="w-full h-full min-w-full min-h-full object-cover object-center block"
-               />`
-            : `<div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blush-50 via-white to-lilac-100/80 select-none">
-                 <span class="text-4xl sm:text-5xl leading-none drop-shadow-xs">${escapeHtml(product.icon || '🎁')}</span>
-                 <span class="mt-1.5 px-2 py-0.5 rounded-md bg-white/85 border border-lilac-200/80 text-[8px] sm:text-[9px] font-semibold tracking-wide text-plum-700/75">
-                   Demo
-                 </span>
-               </div>`;
+          const visualBlock = renderProductVisual(product, 'text-4xl sm:text-5xl');
 
           return `
-            <article class="relative group pt-1.5 pr-1.5">
+            <article class="relative group pt-1.5 pr-1.5" data-product-card="${escapeHtml(product.id)}">
               <!-- วงกลมจำนวนชิ้นและปุ่มลดด่วน: ซ่อนไว้ก่อนหากยังไม่เลือกกด -->
-              ${
-                isSelected
-                  ? `<button
+              <div data-cart-controls ${isSelected ? '' : 'hidden'}>
+                     <button
                        type="button"
                        onclick="changeCartQty('${product.id}', 1)"
                        title="เพิ่ม ${escapeHtml(product.name)} อีก ${stepQty} ชิ้น"
-                       class="absolute top-0 right-0 z-20 min-w-[26px] sm:min-w-[30px] h-[26px] sm:h-[30px] px-1.5 rounded-full text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-md border-2 border-white bg-gradient-to-br from-blush-400 to-lilac-500 text-white transition-transform active:scale-90 ${popClass}"
+                       class="absolute top-0 right-0 z-20 min-w-[26px] sm:min-w-[30px] h-[26px] sm:h-[30px] px-1.5 rounded-full text-[10px] sm:text-xs font-bold flex items-center justify-center shadow-md border-2 border-white bg-gradient-to-br from-blush-400 to-lilac-500 text-white transition-transform active:scale-90"
                      >
                        ${qty.toLocaleString()}
                      </button>
@@ -1864,9 +2863,8 @@
                        onclick="event.stopPropagation(); changeCartQty('${product.id}', -1)"
                        title="ลด ${stepQty} ชิ้น"
                        class="absolute top-8 right-0 z-20 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-blush-300 text-blush-500 text-xs font-bold flex items-center justify-center shadow-xs hover:bg-blush-50 active:scale-90 transition"
-                     >−</button>`
-                  : ''
-              }
+                     >−</button>
+              </div>
 
               <!-- ตัวการ์ดสินค้าหลัก (คลิกเพื่อเพิ่มตามจำนวนที่ตั้ง เช่น +1 หรือ +50 ชิ้น) -->
               <div
@@ -1933,12 +2931,7 @@
         .map((item) => {
           const stepQty = Math.max(1, Number(item.stepQty) || 1);
           const unitRateText = stepQty > 1 ? `฿${item.price}/${stepQty} ชิ้น` : `฿${item.price}/ชิ้น`;
-          const thumb = item.imageUrl
-            ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" onerror="this.onerror=null; this.src='https://placehold.co/160x160/F3EBFF/926BE6?text=Demo';" class="w-full h-full min-w-full min-h-full object-cover object-center block" />`
-            : `<div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blush-50 to-lilac-100">
-                 <span class="text-2xl sm:text-3xl leading-none">${escapeHtml(item.icon || '🎁')}</span>
-                 <span class="text-[8px] font-bold text-plum-700/70 mt-0.5">Demo</span>
-               </div>`;
+          const thumb = renderProductVisual(item, 'text-2xl sm:text-3xl');
 
           return `
             <div class="bg-white/95 border border-lilac-200 rounded-[22px] p-3 sm:p-3.5 shadow-card flex items-center justify-between gap-2.5 sm:gap-4">
@@ -2106,23 +3099,66 @@
     // ---------------------------------------------------------
     // 10. เรนเดอร์หน้า 4: สั่งซื้อสำเร็จ & คัดลอกฟอร์ม (พร้อมลิงก์ออเดอร์ตรง)
     // ---------------------------------------------------------
-    function getOrderLink(orderId) {
-      try {
-        const { protocol, origin, pathname } = window.location;
-        if (protocol === 'http:' || protocol === 'https:') {
-          return `${origin}${pathname}#order=${encodeURIComponent(orderId)}`;
-        }
-      } catch (err) {
-        // ใช้ลิงก์ตัวอย่างกรณีเปิดผ่าน iframe หรือไฟล์ในเครื่อง
-      }
-      return `https://nori-hayday.demo/#order=${encodeURIComponent(orderId)}`;
+    let sharedOrder = null;
+
+    function findOrder(orderId) {
+      const id = String(orderId || '').toUpperCase();
+      return state.orders.find(order => order.id.toUpperCase() === id)
+        || (sharedOrder?.id === id ? sharedOrder : null);
     }
 
-    function buildOrderSummaryText(order) {
+    function getOrderLink(orderId) {
+      const { protocol, origin, pathname } = window.location;
+      const url = new URL(/^https?:$/.test(protocol) ? origin + pathname : 'https://nori-hayday.demo/');
+      const params = new URLSearchParams({ order: orderId });
+      const order = findOrder(orderId);
+      if (order) {
+        const { farmTag, status, createdAt, totalQty, totalPrice } = order;
+        const items = order.items.map(item => [
+          item.productId, item.name, item.qty, getOrderItemSubtotal(item),
+          ...(item.itemStatus && item.itemStatus !== 'pending' ? [item.itemStatus] : []),
+        ]);
+        const snapshot = [farmTag, status, createdAt, totalQty, totalPrice, items];
+        const json = JSON.stringify(snapshot);
+        const bytes = new TextEncoder().encode(json);
+        const compact = btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        params.set('d', compact);
+      }
+      url.hash = params.toString();
+      return url.href;
+    }
+
+    function unpackOrderSnapshot(encoded, code) {
+      if (encoded.length > 220000 || !/^[A-Za-z0-9_-]+$/.test(encoded)) return null;
+      const binary = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'));
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(binary, char => char.charCodeAt(0)));
+      const [farmTag, status, createdAt, totalQty, totalPrice, lines] = JSON.parse(decoded);
+      if (!Array.isArray(lines) || lines.length > 1000) return null;
+      const items = lines.map(([productId, name, qty, lineTotal, itemStatus]) =>
+        ({ productId, name, qty, lineTotal, itemStatus }));
+      return validateSharedOrder({ id: code, farmTag, status, createdAt, totalQty, totalPrice, items }, code);
+    }
+
+    function readSharedOrder(raw, code) {
+      if (!raw || raw.length > 160000) return null;
+      return validateSharedOrder(JSON.parse(raw), code);
+    }
+
+    function validateSharedOrder(order, code) {
+      const validAmount = amount => Number.isFinite(amount) && amount >= 0;
+      if (order?.id !== code || typeof order.status !== 'string' || typeof order.farmTag !== 'string'
+        || !validAmount(order.totalQty) || !validAmount(order.totalPrice)
+        || !Array.isArray(order.items) || order.items.length > 1000
+        || !order.items.every(item => item && typeof item.name === 'string'
+          && validAmount(item.qty) && validAmount(item.lineTotal))) return null;
+      return order;
+    }
+
+    function buildOrderSummaryText(order, orderLink = getOrderLink(order.id)) {
       const itemLines = order.items
         .map((item, idx) => `${idx + 1}. ${item.name} ×${item.qty.toLocaleString()} = ฿${getOrderItemSubtotal(item).toLocaleString()}`)
         .join('\n');
-      const orderLink = getOrderLink(order.id);
 
       return [
         `🌾 สั่งซื้อจากเว็บ: โนริเฮเดย์`,
@@ -2147,7 +3183,17 @@
       }
 
       document.getElementById('successOrderCode').textContent = order.id;
-      document.getElementById('orderCopyPreview').textContent = buildOrderSummaryText(order);
+      const preview = document.getElementById('orderCopyPreview');
+      const summary = buildOrderSummaryText(order, '');
+      const linkLabel = '🔗 ลิงก์ออเดอร์: ';
+      const linkOffset = summary.indexOf(linkLabel) + linkLabel.length;
+      const link = document.createElement('a');
+      link.href = getOrderLink(order.id);
+      link.textContent = `เปิดออเดอร์ ${order.id}`;
+      link.className = 'font-bold text-lilac-500 underline';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      preview.replaceChildren(summary.slice(0, linkOffset), link, summary.slice(linkOffset));
     }
 
     function copyTextFallback(text) {
@@ -2169,7 +3215,7 @@
     }
 
     function copyOrderForm(orderId = state.lastOrderId) {
-      const order = state.orders.find((o) => o.id === orderId);
+      const order = findOrder(orderId);
       if (!order) return;
 
       const text = buildOrderSummaryText(order);
@@ -2205,7 +3251,7 @@
     }
 
     function openOrderView(orderId, fromAdmin = false) {
-      const order = state.orders.find((o) => o.id.toUpperCase() === String(orderId || '').toUpperCase());
+      const order = findOrder(orderId);
       if (!order) {
         showToast('ไม่พบข้อมูลคำสั่งซื้อนี้');
         return;
@@ -2213,15 +3259,19 @@
 
       state.viewingOrderId = order.id;
       state.orderViewFromAdmin = fromAdmin;
-      if (fromAdmin) {
-        state.isOrderAdminMode = true;
-      }
+      state.isOrderAdminMode = fromAdmin && order !== sharedOrder;
 
       document.getElementById('adminWrapper').classList.add('hidden');
       document.getElementById('storefrontWrapper').classList.remove('hidden');
 
       try {
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#order=${encodeURIComponent(order.id)}`);
+        const url = new URL(window.location.href);
+        const fragment = new URLSearchParams(url.hash.slice(1));
+        if (fragment.get('order')?.toUpperCase() !== order.id.toUpperCase()) {
+          url.searchParams.delete('order');
+          url.hash = new URLSearchParams({ order: order.id }).toString();
+          window.history.replaceState(null, '', url);
+        }
       } catch (err) {
         // ข้ามกรณีไม่สามารถแก้ URL ใน iframe
       }
@@ -2291,7 +3341,7 @@
     }
 
     function renderOrderViewPage() {
-      const order = state.orders.find((o) => o.id === state.viewingOrderId);
+      const order = findOrder(state.viewingOrderId);
       if (!order) {
         navigateTo('home');
         return;
@@ -2307,7 +3357,8 @@
 
       // สลับการแสดงปุ่มและแถบโหมดแอดมิน
       document.getElementById('orderViewAdminBanner').classList.toggle('hidden', !state.isOrderAdminMode);
-      document.getElementById('orderViewAdminLoginBtn').classList.toggle('hidden', state.isOrderAdminMode);
+      document.getElementById('orderViewSyncLabel').textContent = order === sharedOrder ? 'ข้อมูล ณ เวลาที่แชร์' : 'อัปเดตในเครื่องนี้';
+      document.getElementById('orderViewAdminLoginBtn').classList.toggle('hidden', state.isOrderAdminMode || order === sharedOrder);
       document.getElementById('orderViewBackAdminBtn').classList.toggle('hidden', !state.orderViewFromAdmin && !state.isOrderAdminMode);
       document.getElementById('orderViewCopyTagBtn')?.classList.toggle('hidden', !state.isOrderAdminMode);
       // คำนวณสรุปจำนวนและสถานะแต่ละกลุ่ม (ส่งแล้ว / รอส่ง / ของหมด)
@@ -2340,17 +3391,7 @@
             ? 'cursor-pointer hover:scale-[1.03] active:scale-95'
             : 'cursor-default';
 
-          const mediaHtml = visual.imageUrl
-            ? `<img
-                 src="${escapeHtml(visual.imageUrl)}"
-                 alt="${escapeHtml(item.name)}"
-                 onerror="this.onerror=null; this.src='https://placehold.co/240x240/F3EBFF/926BE6?text=Demo';"
-                 class="w-full h-full min-w-full min-h-full object-cover object-center block"
-               />`
-            : `<div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blush-50 via-white to-lilac-100/80 select-none">
-                 <span class="text-3xl sm:text-4xl leading-none">${escapeHtml(visual.icon)}</span>
-                 <span class="mt-1 px-1.5 py-0.5 rounded bg-white/85 border border-lilac-200/80 text-[8px] font-semibold text-plum-700/75">Demo</span>
-               </div>`;
+          const mediaHtml = renderProductVisual({ ...visual, id: item.productId, name: item.name }, 'text-3xl sm:text-4xl');
 
           return `
             <div class="flex flex-col items-center">
@@ -2528,27 +3569,30 @@
 
     // ตรวจสอบลิงก์ออเดอร์จาก URL (?order=NH... หรือ #order=NH...) เพื่อเปิดหน้าออเดอร์ลูกค้าทันที
     function checkOrderLinkFromUrl() {
-      try {
-        let code = '';
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('order')) {
-          code = params.get('order').trim();
-        } else if (window.location.hash && window.location.hash.startsWith('#order=')) {
-          code = decodeURIComponent(window.location.hash.slice('#order='.length)).trim();
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+      const query = new URLSearchParams(window.location.search);
+      const code = (fragment.get('order') || query.get('order') || '').trim().toUpperCase();
+      if (!code) return false;
+      sharedOrder = null;
+      if (/^[A-Z0-9-]{1,48}$/.test(code)) {
+        try {
+          sharedOrder = fragment.has('d')
+            ? unpackOrderSnapshot(fragment.get('d'), code)
+            : readSharedOrder(fragment.get('data'), code);
+        } catch {
+          // ลิงก์มีข้อมูลไม่สมบูรณ์
         }
-
-        if (code) {
-          const found = state.orders.find((o) => o.id.toUpperCase() === code.toUpperCase());
-          if (found) {
-            openOrderView(found.id, false);
-            return true;
-          }
-          showToast(`ไม่พบออเดอร์ ${code} ในข้อมูล Demo`);
+        if (findOrder(code)) {
+          openOrderView(code, false);
+          return true;
         }
-      } catch (err) {
-        console.error('Parse order link error:', err);
       }
-      return false;
+      navigateTo('home');
+      openTrackOrderModal();
+      document.getElementById('trackCodeInput').value = code;
+      document.getElementById('trackOrderResult').textContent =
+        'ไม่พบข้อมูลออเดอร์จากลิงก์นี้ค่ะ กรุณาขอลิงก์ใหม่จากเครื่องที่สร้างออเดอร์';
+      return true;
     }
 
     function openTrackOrderModal() {
@@ -2782,7 +3826,14 @@
         return;
       }
 
-      container.innerHTML = state.products
+      const query = document.getElementById('adminProductSearch').value.trim().toLocaleLowerCase('th');
+      const products = state.products.filter(product =>
+        [product.name, product.category].some(value => String(value || '').toLocaleLowerCase('th').includes(query)));
+      if (!products.length) {
+        container.innerHTML = '<p class="col-span-full text-center py-6 text-sm text-plum-700">ไม่พบสินค้าที่ตรงกับคำค้นค่ะ</p>';
+        return;
+      }
+      container.innerHTML = products
         .map(
           (product) => {
             const stepQty = Math.max(1, Number(product.stepQty) || 1);
@@ -2792,9 +3843,7 @@
             <div class="flex items-start gap-3">
               <div class="w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-lilac-200 bg-gradient-to-br from-blush-50 to-lilac-100 flex flex-col items-center justify-center">
                 ${
-                  product.imageUrl
-                    ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}" onerror="this.onerror=null; this.src='https://placehold.co/120x120/F3EBFF/926BE6?text=Demo';" class="w-full h-full min-w-full min-h-full object-cover object-center block" />`
-                    : `<span class="text-2xl leading-none">${escapeHtml(product.icon || '🎁')}</span><span class="text-[8px] font-bold text-plum-700/70">Demo</span>`
+                  renderProductVisual(product, 'text-2xl')
                 }
               </div>
 
@@ -2850,6 +3899,10 @@
     function openProductFormModal(productId = null) {
       const form = document.getElementById('productForm');
       form.reset();
+      const categorySelect = document.getElementById('prodCategorySelect');
+      const categories = new Set([...CATALOG_CATEGORIES, ...state.products.map(product => product.category).filter(Boolean)]);
+      categorySelect.replaceChildren(new Option('เลือกหมวดหมู่ที่มีอยู่', ''),
+        ...Array.from(categories, category => new Option(category, category)));
 
       if (productId) {
         const product = state.products.find((p) => p.id === productId);
@@ -2858,6 +3911,7 @@
         document.getElementById('prodIdInput').value = product.id;
         document.getElementById('prodNameInput').value = product.name;
         document.getElementById('prodCategoryInput').value = product.category;
+        categorySelect.value = product.category;
         document.getElementById('prodLevelInput').value = product.level;
         document.getElementById('prodSaleTypeInput').value = product.saleType || 'single';
         document.getElementById('prodStepQtyInput').value = Math.max(1, Number(product.stepQty) || 1);
