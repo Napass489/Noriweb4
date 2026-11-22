@@ -104,6 +104,165 @@
   <!-- Custom Styles สำหรับลูกเล่นโน้ตดนตรีฟุ้งออกจากแผ่นเสียง และซ่อนสโครลบาร์แนวนอน -->
   <style>
     html, body { touch-action: manipulation; }
+
+    #shopStartup[hidden] { display: none; }
+    #shopStartup,
+    #shopWelcome {
+      color: #38263d;
+      font-family: Anuphan, sans-serif;
+    }
+    #shopStartup {
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+      padding: 18px;
+      background: radial-gradient(ellipse at 12% 15%, #f5d9ea, transparent 52%),
+        radial-gradient(ellipse at 88% 82%, #e9ddf6, transparent 53%), #fff9fc;
+    }
+    .shop-loading-card {
+      position: relative;
+      width: min(100%, 420px);
+      padding: clamp(9px, 2.8vw, 15px);
+      border-radius: 29px;
+      background: #fffaf5;
+      box-shadow: 0 22px 60px -22px rgb(112 67 107 / 42%),
+        0 6px 14px -8px rgb(112 67 107 / 24%);
+      animation: nori-card-arrive 520ms cubic-bezier(.18,.73,.25,1) both;
+    }
+    .shop-loading-picture {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      height: clamp(150px, 49vw, 205px);
+      border-radius: 20px;
+      background: #f6e5ef;
+    }
+    .shop-loading-picture img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 67%;
+    }
+    .shop-loading-stars {
+      position: absolute;
+      top: 13%;
+      left: 11%;
+      color: #98618e;
+      font-size: 20px;
+      letter-spacing: .3em;
+      animation: nori-star-shimmer 1350ms ease-in-out infinite alternate;
+    }
+    .shop-loading-seal {
+      position: absolute;
+      z-index: 1;
+      right: clamp(22px, 6vw, 36px);
+      top: calc(clamp(9px, 2.8vw, 15px) + clamp(150px, 49vw, 205px) - 26px);
+      display: grid;
+      place-items: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 49% 52% 48% 47%;
+      transform: rotate(11deg);
+      background: linear-gradient(145deg, #efc6da, #ce94b9);
+      box-shadow: inset 0 2px 3px #fff9, 0 5px 11px #74466433;
+      color: #713f63;
+      font-size: 22px;
+    }
+    .shop-loading-seal::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px solid #fff9;
+      border-radius: inherit;
+    }
+    .shop-loading-caption { padding: 3px clamp(11px, 4vw, 23px) 12px; }
+    .shop-loading-caption .shop-intro-heading {
+      margin-top: 14px;
+      font-size: clamp(22px, 5vw, 29px);
+    }
+    .shop-loading-caption .shop-intro-text { margin-top: 3px; }
+    .shop-loading-progress {
+      position: relative;
+      height: 4px;
+      margin: 16px 8px 4px;
+      border-radius: 999px;
+      background: #eadcf1;
+    }
+    .shop-loading-progress::after {
+      content: "♥";
+      position: absolute;
+      top: 50%;
+      left: 14%;
+      color: #aa6292;
+      text-shadow: 0 0 4px #fffaf5;
+      font-size: 17px;
+      line-height: 1;
+      transform: translate(-50%, -50%);
+      animation: nori-heart-glide 1250ms ease-in-out infinite alternate;
+    }
+    @keyframes nori-card-arrive {
+      from { opacity: 0; transform: translateY(12px) rotate(-3deg) scale(.97); }
+      to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+    }
+    @keyframes nori-star-shimmer {
+      from { opacity: .45; transform: translateY(2px); }
+      to { opacity: 1; transform: translateY(-3px); }
+    }
+    @keyframes nori-heart-glide { to { left: 86%; } }
+    @media (prefers-reduced-motion: reduce) {
+      .shop-loading-card, .shop-loading-stars, .shop-loading-progress::after { animation: none; }
+    }
+    .shop-intro-image {
+      display: block;
+      width: 100%;
+      height: 144px;
+      margin: 0 auto;
+      border-radius: 19px;
+      object-fit: cover;
+      object-position: center 63%;
+      background: #f8e7f0;
+    }
+    .shop-intro-heading {
+      margin: 16px 0 0;
+      font-family: Mali, Anuphan, sans-serif;
+      font-size: clamp(19px, 5vw, 24px);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .shop-intro-text { margin: 6px 0 0; color: #684d70; font-size: 15px; }
+    #shopWelcome {
+      position: fixed;
+      inset: 0;
+      width: min(calc(100% - 32px), 388px);
+      max-height: calc(100% - 32px);
+      margin: auto;
+      overflow: auto;
+      padding: 16px;
+      border: 0;
+      border-radius: 25px;
+      background: #fffafd;
+      box-shadow: 0 18px 60px rgb(83 48 99 / 24%);
+      text-align: center;
+    }
+    #shopWelcome::backdrop { background: rgb(60 38 70 / 36%); }
+    .shop-intro-button {
+      min-height: 44px;
+      margin-top: 16px;
+      padding: 8px 23px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(110deg, #f5c9df, #e5d1f7);
+      color: #38263d;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .shop-intro-button:focus-visible { outline: 2px solid #9166a7; outline-offset: 3px; }
+
     #confirmItemList {
       max-height: min(20rem, 38vh);
       overflow-y: auto;
@@ -146,12 +305,11 @@
       overflow: hidden;
       display: grid;
       align-content: center;
-      min-height: clamp(80px, 12vw, 108px);
-      padding: 12px 26% 12px clamp(14px, 4vw, 28px);
+      min-height: clamp(144px, 27vw, 208px);
+      padding: 16px 45% 16px clamp(16px, 4vw, 30px);
       border-radius: 22px;
       background:
-        radial-gradient(ellipse at 85% 25%, #fff7fc 0, transparent 52%),
-        linear-gradient(110deg, #f9e8f0 0%, #f7edf8 51%, #eae1f9 100%);
+        linear-gradient(110deg, #f9e8f0 0%, #f7eaf4 54%, #f4e2ef 100%);
       box-shadow: 0 10px 24px -18px rgb(122 77 141 / 34%);
     }
     .shop-mini-banner h2 {
@@ -167,43 +325,14 @@
     .shop-mini-banner-art {
       position: absolute;
       z-index: -1;
-      right: 4%;
-      top: 50%;
-      width: 21%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      transform: translateY(-50%);
-      color: #b580ad;
-      background: radial-gradient(ellipse, #fff9fd 0, transparent 66%);
-    }
-    .shop-mini-banner-bow {
-      width: clamp(32px, 8vw, 55px);
-      height: clamp(25px, 6vw, 41px);
-      background: radial-gradient(circle at center, #c78ab9 0 11%, transparent 13%);
-      position: relative;
-      transform: rotate(-9deg);
-    }
-    .shop-mini-banner-bow::before,
-    .shop-mini-banner-bow::after {
-      content: "";
-      position: absolute;
-      top: 21%;
-      width: 52%;
-      height: 59%;
-      background: linear-gradient(155deg, #fff3fb, #d4a1ca);
-      border-radius: 62% 30% 58% 39%;
-      transform: rotate(21deg);
-    }
-    .shop-mini-banner-bow::after {
       right: 0;
-      transform: scaleX(-1) rotate(21deg);
-    }
-    .shop-mini-banner-art > span:last-child {
-      position: absolute;
-      top: 12%;
-      right: 3%;
-      font-size: .8rem;
+      bottom: -10%;
+      width: auto;
+      height: 124%;
+      max-width: none;
+      -webkit-mask-image: linear-gradient(90deg, transparent 6%, #000 46%);
+      mask-image: linear-gradient(90deg, transparent 6%, #000 46%);
+      pointer-events: none;
     }
 
     @media (max-width: 1024px), (any-pointer: coarse) {
@@ -246,6 +375,74 @@
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blush-50 via-[#FFF9FD] to-lilac-100/70 text-plum-900 font-sans antialiased selection:bg-blush-200 selection:text-plum-900">
+  <div id="shopStartup" hidden>
+    <div class="shop-loading-card">
+      <div class="shop-loading-picture">
+        <img width="1000" height="667" alt="" />
+        <span class="shop-loading-stars" aria-hidden="true">✦ · ✧</span>
+      </div>
+      <span class="shop-loading-seal" aria-hidden="true">✿</span>
+      <div class="shop-loading-caption">
+        <p class="shop-intro-heading">โนริเฮเดย์</p>
+        <p class="shop-intro-text" role="status">กำลังเปิดประตูฟาร์ม…</p>
+        <div class="shop-loading-progress" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+  <dialog id="shopWelcome" aria-labelledby="shopWelcomeTitle" aria-describedby="shopWelcomeText">
+    <img class="shop-intro-image" width="1000" height="667" alt="" />
+    <h2 id="shopWelcomeTitle" class="shop-intro-heading">ยินดีต้อนรับสู่โนริเฮเดย์</h2>
+    <p id="shopWelcomeText" class="shop-intro-text">แวะมาเลือกไอเทมไปเติมฟาร์มกันนะคะ</p>
+    <form method="dialog">
+      <button type="submit" class="shop-intro-button" autofocus>เข้าหน้าร้าน</button>
+    </form>
+  </dialog>
+  <script>
+    (() => {
+      const visitKey = 'nori-hayday-welcome-seen';
+      const isOrderLink = () => {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        return new URLSearchParams(window.location.search).has('order') ||
+          fragment.has('order') || fragment.has('o');
+      };
+      if (isOrderLink()) return;
+      try {
+        if (sessionStorage.getItem(visitKey)) return;
+      } catch {}
+
+      const loading = document.getElementById('shopStartup');
+      const welcome = document.getElementById('shopWelcome');
+      const artwork = './assets/nori-farm-banner.webp';
+      loading.querySelector('img').src = artwork;
+      loading.hidden = false;
+      const started = performance.now();
+      const failsafe = window.setTimeout(() => { loading.hidden = true; }, 4000);
+
+      welcome.addEventListener('close', () => {
+        try {
+          sessionStorage.setItem(visitKey, '1');
+        } catch {}
+      });
+
+      window.addEventListener('nori:storefront-ready', () => {
+        if (loading.hidden) return;
+        window.clearTimeout(failsafe);
+        const delay = Math.max(0, 2000 - (performance.now() - started));
+        window.setTimeout(() => {
+          loading.hidden = true;
+          if (isOrderLink() || typeof welcome.showModal !== 'function') return;
+          welcome.querySelector('img').src = artwork;
+          welcome.showModal();
+        }, delay);
+      }, { once: true });
+
+      window.addEventListener('hashchange', () => {
+        if (!isOrderLink()) return;
+        loading.hidden = true;
+        if (welcome.open) welcome.close();
+      });
+    })();
+  </script>
   <div id="storefrontWrapper" class="w-full max-w-2xl mx-auto px-3.5 sm:px-6 pt-4 pb-16">
 
     <!-- 1. HEADER BAR (ทรงสี่เหลี่ยมโค้งมน + โลโก้และแผ่นเสียงเต็มรูป + โน้ตดนตรีฟุ้งออกจากแผ่นเสียง) -->
@@ -331,10 +528,8 @@
       <section class="shop-mini-banner" aria-labelledby="shopMiniBannerTitle">
         <h2 id="shopMiniBannerTitle" class="font-cute font-bold text-plum-900">ไอเทมฟาร์มของโนริ</h2>
         <p>ค้นหาของเข้าฟาร์มได้ตามเลเวล</p>
-        <div class="shop-mini-banner-art" aria-hidden="true">
-          <span class="shop-mini-banner-bow"></span>
-          <span>✦</span>
-        </div>
+        <img class="shop-mini-banner-art" src="./assets/nori-farm-banner.webp"
+          width="1000" height="667" alt="" decoding="async" />
       </section>
 
       <!-- 3. CATEGORY BAR + ค้นหาสินค้า & ตัวกรองเลเวล (กดเลือกหรือพิมพ์ได้ ค้นเวล N แสดงตั้งแต่ 1-N) -->
@@ -4182,6 +4377,7 @@
       // หากเปิดเว็บมาด้วยลิงก์ออเดอร์ (?order= หรือ #order=) ให้เข้าหน้าออเดอร์ลูกค้าโดยตรง
       if (!checkOrderLinkFromUrl()) {
         navigateTo('home');
+        window.dispatchEvent(new Event('nori:storefront-ready'));
       }
 
       window.addEventListener('hashchange', () => {
