@@ -111,6 +111,101 @@
     }
     #orderCopyPreview { min-width: 0; overflow-wrap: anywhere; }
     #productGrid [data-cart-controls][hidden] { display: none; }
+    #storefrontWrapper > header,
+    #page-home .shop-filter-panel,
+    #page-home #productSearchInput,
+    #page-home .shop-level-control,
+    #page-home .shop-level-control > button,
+    #page-home #levelDropdown,
+    #productGrid [role="button"],
+    #productGrid .shop-item-caption {
+      border-color: transparent;
+    }
+    #storefrontWrapper > header,
+    #page-home .shop-filter-panel,
+    #page-home #levelDropdown {
+      box-shadow: 0 8px 24px -16px rgb(103 68 117 / 30%);
+    }
+    #page-home #productSearchInput:focus,
+    #page-home .shop-level-control:focus-within {
+      box-shadow: inset 0 0 0 2px #e4d3f4;
+    }
+    #productGrid [role="button"] {
+      box-shadow: 0 8px 22px -15px rgb(103 68 117 / 35%);
+    }
+    #productGrid [role="button"]:hover {
+      box-shadow: 0 9px 22px -13px rgb(103 68 117 / 42%);
+    }
+    #productGrid [role="button"].ring-2 {
+      box-shadow: 0 0 0 2px #f4b8d0, 0 8px 22px -15px rgb(103 68 117 / 35%);
+    }
+
+    .shop-mini-banner {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      display: grid;
+      align-content: center;
+      min-height: clamp(80px, 12vw, 108px);
+      padding: 12px 26% 12px clamp(14px, 4vw, 28px);
+      border-radius: 22px;
+      background:
+        radial-gradient(ellipse at 85% 25%, #fff7fc 0, transparent 52%),
+        linear-gradient(110deg, #f9e8f0 0%, #f7edf8 51%, #eae1f9 100%);
+      box-shadow: 0 10px 24px -18px rgb(122 77 141 / 34%);
+    }
+    .shop-mini-banner h2 {
+      font-size: clamp(1.02rem, 3.6vw, 1.46rem);
+      line-height: 1.25;
+    }
+    .shop-mini-banner p {
+      margin-top: 4px;
+      color: #6d4b70;
+      font-size: clamp(.69rem, 2vw, .8rem);
+      line-height: 1.4;
+    }
+    .shop-mini-banner-art {
+      position: absolute;
+      z-index: -1;
+      right: 4%;
+      top: 50%;
+      width: 21%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      transform: translateY(-50%);
+      color: #b580ad;
+      background: radial-gradient(ellipse, #fff9fd 0, transparent 66%);
+    }
+    .shop-mini-banner-bow {
+      width: clamp(32px, 8vw, 55px);
+      height: clamp(25px, 6vw, 41px);
+      background: radial-gradient(circle at center, #c78ab9 0 11%, transparent 13%);
+      position: relative;
+      transform: rotate(-9deg);
+    }
+    .shop-mini-banner-bow::before,
+    .shop-mini-banner-bow::after {
+      content: "";
+      position: absolute;
+      top: 21%;
+      width: 52%;
+      height: 59%;
+      background: linear-gradient(155deg, #fff3fb, #d4a1ca);
+      border-radius: 62% 30% 58% 39%;
+      transform: rotate(21deg);
+    }
+    .shop-mini-banner-bow::after {
+      right: 0;
+      transform: scaleX(-1) rotate(21deg);
+    }
+    .shop-mini-banner-art > span:last-child {
+      position: absolute;
+      top: 12%;
+      right: 3%;
+      font-size: .8rem;
+    }
+
     @media (max-width: 1024px), (any-pointer: coarse) {
       input, select, textarea, [contenteditable="true"] { font-size: 16px !important; }
     }
@@ -233,10 +328,19 @@
          PAGE 1: หน้าหลักร้านค้า (แยกจากหน้าอื่นชัดเจน + เว้นระยะห่างจากบาร์ชื่อร้านพอดี)
     ========================================================== -->
     <main id="page-home" class="mt-5 sm:mt-6 space-y-4 animate-fade-slide">
+      <section class="shop-mini-banner" aria-labelledby="shopMiniBannerTitle">
+        <h2 id="shopMiniBannerTitle" class="font-cute font-bold text-plum-900">ไอเทมฟาร์มของโนริ</h2>
+        <p>ค้นหาของเข้าฟาร์มได้ตามเลเวล</p>
+        <div class="shop-mini-banner-art" aria-hidden="true">
+          <span class="shop-mini-banner-bow"></span>
+          <span>✦</span>
+        </div>
+      </section>
+
       <!-- 3. CATEGORY BAR + ค้นหาสินค้า & ตัวกรองเลเวล (กดเลือกหรือพิมพ์ได้ ค้นเวล N แสดงตั้งแต่ 1-N) -->
       <section aria-label="ค้นหา กรองเลเวล และหมวดหมู่สินค้า" class="w-full space-y-2.5">
         <!-- แถบค้นหาสินค้า + ตัวกรองเลเวล -->
-        <div class="w-full bg-white/90 border border-lilac-200/90 rounded-2xl p-2 sm:p-2.5 shadow-card flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div class="w-full bg-white/90 border border-lilac-200/90 rounded-2xl p-2 sm:p-2.5 shop-filter-panel shadow-card flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <!-- ช่องค้นหาชื่อสินค้า -->
           <div class="relative flex-1">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-plum-700/50 text-xs sm:text-sm">🔍</span>
@@ -259,7 +363,7 @@
 
           <!-- ตัวกรองเลเวล (พิมพ์ตัวเลขก็ได้ หรือกดเลือกจากรายการก็ได้) -->
           <div id="levelFilterWrapper" class="relative sm:w-52 shrink-0">
-            <div class="flex items-center rounded-xl bg-blush-50/65 border border-blush-200/90 focus-within:border-blush-400 focus-within:bg-white transition overflow-hidden">
+            <div class="shop-level-control flex items-center rounded-xl bg-blush-50/65 border border-blush-200/90 focus-within:border-blush-400 focus-within:bg-white transition overflow-hidden">
               <span class="pl-3 pr-1.5 text-xs font-bold text-blush-500 select-none shrink-0">Lv.</span>
               <input
                 id="levelFilterInput"
@@ -317,7 +421,7 @@
         </div>
 
         <!-- แถบหมวดหมู่ทรงแคปซูล -->
-        <div class="w-full bg-white/90 border border-lilac-200/90 rounded-2xl px-2.5 py-2 shadow-card">
+        <div class="w-full bg-white/90 border border-lilac-200/90 rounded-2xl px-2.5 py-2 shop-filter-panel shadow-card">
           <div id="categoryList" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             <!-- ปุ่มหมวดหมู่จะถูกสร้างด้วย JavaScript -->
           </div>
@@ -2892,7 +2996,7 @@
                 </div>
 
                 <!-- ส่วนล่างของการ์ด: เส้นคั่น + ชื่อสินค้า + รายละเอียดใต้ชื่อสินค้า -->
-                <div class="border-t border-lilac-100 bg-white px-1.5 sm:px-2 py-1.5 sm:py-2 text-center">
+                <div class="shop-item-caption border-t border-lilac-100 bg-white px-1.5 sm:px-2 py-1.5 sm:py-2 text-center">
                   <p class="text-[11px] sm:text-xs font-bold text-plum-900 truncate leading-tight">
                     ${escapeHtml(product.name)}
                   </p>
